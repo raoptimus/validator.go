@@ -93,5 +93,5 @@ func TestValidatorRequired_EmptyPointerValue_ReturnsExpectedErrorMessage(t *test
 	err := Validate(dto, rules, false)
 	assert.NotNil(t, err)
 	assert.Equal(t, "Required.", err.Error())
-	assert.Equal(t, map[string][]string{"Name": {"Required"}}, err.(*rule.ResultSet).GetResultsErrors())
+	assert.Equal(t, map[string][]string{"Name": {"Required"}}, err.(rule.ResultSet).GetResultErrors())
 }

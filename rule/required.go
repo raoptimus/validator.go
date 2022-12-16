@@ -8,18 +8,18 @@ type Required struct {
 	message string
 }
 
-func NewRequired() *Required {
-	return &Required{
+func NewRequired() Required {
+	return Required{
 		message: "Value cannot be blank.",
 	}
 }
 
-func (s *Required) WithMessage(message string) *Required {
+func (s Required) WithMessage(message string) Required {
 	s.message = message
 	return s
 }
 
-func (s *Required) ValidateValue(value reflect.Value) *Result {
+func (s Required) ValidateValue(value reflect.Value) error {
 	if valueIsEmpty(value) {
 		return NewResult().WithError(formatMessage(s.message))
 	}

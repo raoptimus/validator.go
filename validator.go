@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"errors"
 	"reflect"
 
 	"github.com/raoptimus/validator.go/rule"
@@ -12,12 +13,15 @@ func Validate(dataSet any, rules map[string][]RuleValidator, skipOnError bool) e
 	vm := reflect.Indirect(pm)
 
 	for attr, r := range rules {
-		value := vm.FieldByName(attr)
+		value := reflect.Indirect(vm.FieldByName(attr))
 
 		for _, validator := range r {
 			if _, ok := validator.(*rule.Required); ok {
 				if err := validator.ValidateValue(value); err != nil {
-					resultSet.AddResult(attr, err)
+					var errRes rule.Result
+					if errors.As(err, &errRes) {
+						resultSet = resultSet.WithResult(attr, errRes)
+					}
 
 					if skipOnError {
 						goto next
@@ -32,7 +36,10 @@ func Validate(dataSet any, rules map[string][]RuleValidator, skipOnError bool) e
 				continue
 			}
 			if err := validator.ValidateValue(value); err != nil {
-				resultSet.AddResult(attr, err)
+				var errRes rule.Result
+				if errors.As(err, &errRes) {
+					resultSet = resultSet.WithResult(attr, errRes)
+				}
 
 				if skipOnError {
 					break

@@ -25,8 +25,6 @@ func formatMessage(message string) string {
 }
 
 func valueIsEmpty(value reflect.Value) bool {
-	value = extractValue(value)
-
 	if !value.IsValid() || value.IsZero() {
 		return true
 	}
@@ -38,16 +36,4 @@ func valueIsEmpty(value reflect.Value) bool {
 	}
 
 	return false
-}
-
-func extractValue(value reflect.Value) reflect.Value {
-	if !value.IsValid() {
-		return value
-	}
-
-	if value.Kind() == reflect.Pointer {
-		return extractValue(reflect.Indirect(value))
-	}
-
-	return value
 }

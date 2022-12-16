@@ -15,8 +15,8 @@ type StringLength struct {
 	min, max       int
 }
 
-func NewStringLength(min, max int) *StringLength {
-	return &StringLength{
+func NewStringLength(min, max int) StringLength {
+	return StringLength{
 		message:         "This value must be a string.",
 		tooShortMessage: "This value should contain at least {min}.",
 		tooLongMessage:  "This value should contain at most {max}.",
@@ -25,14 +25,22 @@ func NewStringLength(min, max int) *StringLength {
 	}
 }
 
-func (s *StringLength) WithMessage(message string) *StringLength {
+func (s StringLength) WithMessage(message string) StringLength {
 	s.message = message
 	return s
 }
 
-func (s *StringLength) ValidateValue(value reflect.Value) *Result {
-	value = extractValue(value)
+func (s StringLength) WithTooShortMessage(message string) StringLength {
+	s.tooShortMessage = message
+	return s
+}
 
+func (s StringLength) WithTooLongMessage(message string) StringLength {
+	s.tooLongMessage = message
+	return s
+}
+
+func (s StringLength) ValidateValue(value reflect.Value) error {
 	if !value.IsValid() || value.Kind() != reflect.String {
 		return NewResult().WithError(formatMessage(s.message))
 	}
@@ -42,7 +50,7 @@ func (s *StringLength) ValidateValue(value reflect.Value) *Result {
 	l := len(v)
 
 	if l < s.min {
-		result.AddError(formatMessageWithArgs(s.tooShortMessage,
+		result = result.WithError(formatMessageWithArgs(s.tooShortMessage,
 			map[string]any{
 				"min": s.min,
 				"max": s.max,
@@ -51,7 +59,7 @@ func (s *StringLength) ValidateValue(value reflect.Value) *Result {
 	}
 
 	if l > s.max {
-		result.AddError(formatMessageWithArgs(s.tooLongMessage,
+		result = result.WithError(formatMessageWithArgs(s.tooLongMessage,
 			map[string]any{
 				"min": s.min,
 				"max": s.max,

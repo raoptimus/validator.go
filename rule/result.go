@@ -3,33 +3,28 @@ package rule
 import (
 	"errors"
 	"strings"
-	"sync"
 )
 
 var ErrResultNotFound = errors.New("result not found")
 
 type Result struct {
-	mu sync.Locker
-
 	errors []string
 }
 
-func NewResult() *Result {
-	return &Result{
-		mu:     &sync.Mutex{},
+var emptyResult = Result{}
+
+func NewResult() Result {
+	return Result{
 		errors: make([]string, 0),
 	}
 }
 
-func (s *Result) WithError(err string) *Result {
-	s.AddError(err)
+func (s Result) WithError(err string) Result {
+	s.errors = append(s.errors, err)
 	return s
 }
 
-func (s *Result) Error() string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
+func (s Result) Error() string {
 	summary := strings.Builder{}
 	for _, v := range s.errors {
 		summary.WriteString(v)
@@ -38,45 +33,26 @@ func (s *Result) Error() string {
 	return strings.TrimRight(summary.String(), " ")
 }
 
-func (s *Result) IsValid() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
+func (s Result) IsValid() bool {
 	return len(s.errors) == 0
 }
 
-func (s *Result) AddError(err string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.errors = append(s.errors, err)
-}
-
-func (s *Result) GetErrors() []string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
+func (s Result) GetErrors() []string {
 	r := s.errors
 	return r
 }
 
 type ResultSet struct {
-	mu sync.Locker
-
-	results map[string]*Result
+	results map[string]Result
 }
 
-func NewResultSet() *ResultSet {
-	return &ResultSet{
-		mu:      &sync.Mutex{},
-		results: make(map[string]*Result),
+func NewResultSet() ResultSet {
+	return ResultSet{
+		results: make(map[string]Result),
 	}
 }
 
-func (s *ResultSet) Error() string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
+func (s ResultSet) Error() string {
 	summary := strings.Builder{}
 	for _, v := range s.results {
 		summary.WriteString(v.Error())
@@ -85,56 +61,51 @@ func (s *ResultSet) Error() string {
 	return strings.TrimRight(summary.String(), "\n")
 }
 
-func (s *ResultSet) HasErrors() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
+func (s ResultSet) HasErrors() bool {
 	return len(s.results) > 0
 }
 
-func (s *ResultSet) GetResult(attribute string) (*Result, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
+func (s ResultSet) GetResult(attribute string) (Result, error) {
 	if r, ok := s.results[attribute]; !ok {
-		return nil, ErrResultNotFound
+		return emptyResult, ErrResultNotFound
 	} else {
 		return r, nil
 	}
 }
 
-func (s *ResultSet) AddResult(attribute string, result *Result) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s ResultSet) WithResult(attribute string, result Result) ResultSet {
+	if result.IsValid() {
+		return s
+	}
 
-	r, ok := s.results[attribute]
+	res, ok := s.results[attribute]
 
 	if !ok {
 		s.results[attribute] = result
-		return
+		return s
 	}
 
-	if r.IsValid() {
-		return
+	if res.IsValid() {
+		return s
 	}
 
 	for _, err := range result.GetErrors() {
-		r.AddError(err)
+		res = res.WithError(err)
 	}
+
+	s.results[attribute] = res
+	return s
 }
 
-func (s *ResultSet) GetResults() map[string]*Result {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	r := s.results
-	return r
+func (s ResultSet) GetResults() map[string]Result {
+	ret := make(map[string]Result)
+	for attr, res := range s.results {
+		ret[attr] = res
+	}
+	return ret
 }
 
-func (s *ResultSet) GetResultsErrors() map[string][]string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
+func (s ResultSet) GetResultErrors() map[string][]string {
 	ret := make(map[string][]string)
 	for attr, r := range s.results {
 		ret[attr] = r.GetErrors()
