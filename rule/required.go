@@ -19,8 +19,9 @@ func (s Required) WithMessage(message string) Required {
 	return s
 }
 
-func (s Required) ValidateValue(value reflect.Value) error {
-	if valueIsEmpty(value) {
+func (s Required) ValidateValue(value any) error {
+	v := reflect.ValueOf(value)
+	if valueIsEmpty(v) {
 		return NewResult().WithError(formatMessage(s.message))
 	}
 

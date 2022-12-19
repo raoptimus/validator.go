@@ -21,8 +21,8 @@ test:
 		-timeout=2m
 
 bench:
-	@go test -run $(TEST_PATTERN) \
-		-bench Validator* \
+	@cd rule && go test -run $(TEST_PATTERN) \
+		-bench ValidatorUrl \
 		-benchtime 3s \
-		-benchmem -memprofile "$(COVERAGE_DIR)/mem.out"
-	@go tool pprof -alloc_space validator.go.test "$(COVERAGE_DIR)/mem.out"
+		-benchmem -memprofile "../$(COVERAGE_DIR)/mem.out"
+	@go tool pprof -alloc_space rule/rule.test "$(COVERAGE_DIR)/mem.out"

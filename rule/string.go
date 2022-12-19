@@ -1,7 +1,6 @@
 package rule
 
 import (
-	"reflect"
 	"strings"
 )
 
@@ -40,13 +39,14 @@ func (s StringLength) WithTooLongMessage(message string) StringLength {
 	return s
 }
 
-func (s StringLength) ValidateValue(value reflect.Value) error {
-	if !value.IsValid() || value.Kind() != reflect.String {
+func (s StringLength) ValidateValue(value any) error {
+	v, ok := value.(string)
+	if !ok {
 		return NewResult().WithError(formatMessage(s.message))
 	}
 
 	result := NewResult()
-	v := strings.Trim(value.String(), " ")
+	v = strings.Trim(v, " ")
 	l := len(v)
 
 	if l < s.min {
@@ -70,6 +70,5 @@ func (s StringLength) ValidateValue(value reflect.Value) error {
 	if !result.IsValid() {
 		return result
 	}
-
 	return nil
 }

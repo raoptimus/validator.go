@@ -25,11 +25,16 @@ func (s Result) WithError(err string) Result {
 }
 
 func (s Result) Error() string {
+	if len(s.errors) == 1 {
+		return s.errors[0]
+	}
+
 	summary := strings.Builder{}
 	for _, v := range s.errors {
 		summary.WriteString(v)
 		summary.WriteString(". ")
 	}
+
 	return strings.TrimRight(summary.String(), " ")
 }
 

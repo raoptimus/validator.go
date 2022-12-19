@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/raoptimus/validator.go/rule"
@@ -52,11 +53,13 @@ func TestValidatorRequired_EmptyPointerValue_ReturnsExpectedError(t *testing.T) 
 	dto := &testObject2{Name: &v}
 	rules := map[string][]RuleValidator{
 		"Name": {
-			rule.NewRequired(),
+			rule.NewRequired().WithMessage("Required"),
 		},
 	}
 	err := Validate(dto, rules, false)
 	assert.NotNil(t, err)
+	assert.Equal(t, "Required", err.Error())
+	assert.Equal(t, map[string][]string{"Name": {"Required"}}, err.(rule.ResultSet).GetResultErrors())
 }
 
 func TestValidatorRequired_NotEmptyString_ReturnsExpectedNil(t *testing.T) {
@@ -82,16 +85,15 @@ func TestValidatorRequired_NotEmptyPointerValue_ReturnsNil(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestValidatorRequired_EmptyPointerValue_ReturnsExpectedErrorMessage(t *testing.T) {
-	v := ""
-	dto := &testObject2{Name: &v}
+func TestValidatorRequired_NotExistProperty_ReturnsExpectedError(t *testing.T) {
+	dto := &testObject{Name: ""}
 	rules := map[string][]RuleValidator{
-		"Name": {
+		"NotExists": {
 			rule.NewRequired().WithMessage("Required"),
 		},
 	}
 	err := Validate(dto, rules, false)
 	assert.NotNil(t, err)
-	assert.Equal(t, "Required.", err.Error())
-	assert.Equal(t, map[string][]string{"Name": {"Required"}}, err.(rule.ResultSet).GetResultErrors())
+	assert.Equal(t, "undefined property: validator.testObject.NotExists", err.Error())
+	assert.Equal(t, ErrUndefinedField, errors.Unwrap(err))
 }
