@@ -1,7 +1,7 @@
 package rule
 
 import (
-	"regexp"
+	"github.com/raoptimus/validator.go/regexpc"
 )
 
 type MatchRegularExpression struct {
@@ -27,7 +27,7 @@ func (s MatchRegularExpression) ValidateValue(value any) error {
 		return NewResult().WithError(formatMessage(s.message))
 	}
 
-	r, err := regexp.Compile(s.pattern)
+	r, err := regexpc.Compile(s.pattern)
 	if err != nil {
 		return err
 	}
