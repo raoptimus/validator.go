@@ -6,22 +6,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestResultSet_GetResult_Successfully(t *testing.T) {
+func TestResultSet_Result_Successfully(t *testing.T) {
 	rs := NewResultSet()
 	rs = rs.WithResult("name", NewResult().WithError("test"))
 
-	rsl := rs.GetResults()
-	assert.Equal(t, map[string]Result{"name": {errors: []string{"test"}}}, rs.GetResults())
+	rsl := rs.Results()
+	assert.Equal(t, map[string]Result{"name": {errors: []string{"test"}}}, rs.Results())
 
 	rsl["invisible"] = NewResult().WithError("invisible error")
-	assert.Equal(t, map[string]Result{"name": {errors: []string{"test"}}}, rs.GetResults())
+	assert.Equal(t, map[string]Result{"name": {errors: []string{"test"}}}, rs.Results())
 
-	r, err := rs.GetResult("name")
+	r, err := rs.Result("name")
 	assert.NoError(t, err)
 
 	rs = rs.WithResult("name", r.WithError("test2"))
 	r = r.WithError("invisible error")
-	assert.Equal(t, map[string]Result{"name": {errors: []string{"test", "test", "test2"}}}, rs.GetResults())
+	assert.Equal(t, map[string]Result{"name": {errors: []string{"test", "test", "test2"}}}, rs.Results())
 }
 
 func TestResultSet_HasErrors_ReturnsTrue(t *testing.T) {
@@ -33,16 +33,16 @@ func TestResultSet_HasErrors_ReturnsFalse(t *testing.T) {
 	assert.False(t, rs.HasErrors())
 }
 
-func TestResult_GetErrors_Successfully(t *testing.T) {
+func TestResult_Errors_Successfully(t *testing.T) {
 	res := NewResult().WithError("test err")
-	errs := res.GetErrors()
+	errs := res.Errors()
 	assert.Equal(t, []string{"test err"}, errs)
 
 	errs = append(errs, "invisible error")
-	assert.Equal(t, []string{"test err"}, res.GetErrors())
+	assert.Equal(t, []string{"test err"}, res.Errors())
 
 	res = res.WithError("test2 err")
-	assert.Equal(t, []string{"test err", "test2 err"}, res.GetErrors())
+	assert.Equal(t, []string{"test err", "test2 err"}, res.Errors())
 }
 
 func TestResult_IsValid_True(t *testing.T) {

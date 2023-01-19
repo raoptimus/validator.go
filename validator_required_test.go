@@ -4,14 +4,18 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/raoptimus/validator.go/rule"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/raoptimus/validator.go/rule"
 )
 
 type testObject struct {
-	Name string `json:"name"`
+	Name string
 }
 type testObject2 struct {
+	Name *string
+}
+type testObject3 struct {
 	Name *string `json:"name"`
 }
 
@@ -59,7 +63,21 @@ func TestValidatorRequired_EmptyPointerValue_ReturnsExpectedError(t *testing.T) 
 	err := Validate(dto, rules, false)
 	assert.NotNil(t, err)
 	assert.Equal(t, "Required", err.Error())
-	assert.Equal(t, map[string][]string{"Name": {"Required"}}, err.(rule.ResultSet).GetResultErrors())
+	assert.Equal(t, map[string][]string{"Name": {"Required"}}, err.(rule.ResultSet).ResultErrors())
+}
+
+func TestValidatorRequired_EmptyPointerValueWithJsonTag_ReturnsExpectedError(t *testing.T) {
+	v := ""
+	dto := &testObject3{Name: &v}
+	rules := map[string][]RuleValidator{
+		"Name": {
+			rule.NewRequired().WithMessage("Required"),
+		},
+	}
+	err := Validate(dto, rules, false)
+	assert.NotNil(t, err)
+	assert.Equal(t, "Required", err.Error())
+	assert.Equal(t, map[string][]string{"name": {"Required"}}, err.(rule.ResultSet).ResultErrors())
 }
 
 func TestValidatorRequired_NotEmptyString_ReturnsExpectedNil(t *testing.T) {

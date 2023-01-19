@@ -27,10 +27,22 @@ func Validate(dataSet any, rules map[string][]RuleValidator, skipOnError bool) e
 	pm := reflect.ValueOf(dataSet)
 	vm := reflect.Indirect(pm)
 
+	t := reflect.TypeOf(dataSet)
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+
 	for attr, r := range rules {
 		value := reflect.Indirect(vm.FieldByName(attr))
 		if !value.IsValid() {
 			return &UndefinedFieldErr{vm.Type().String(), attr}
+		}
+
+		fieldName := attr
+		if field, ok := t.FieldByName(attr); ok {
+			if v, ok := field.Tag.Lookup("json"); ok {
+				fieldName = v
+			}
 		}
 
 		for _, validator := range r {
@@ -38,7 +50,7 @@ func Validate(dataSet any, rules map[string][]RuleValidator, skipOnError bool) e
 				if err := validator.ValidateValue(value.Interface()); err != nil {
 					var errRes rule.Result
 					if errors.As(err, &errRes) {
-						resultSet = resultSet.WithResult(attr, errRes)
+						resultSet = resultSet.WithResult(fieldName, errRes)
 					}
 
 					if skipOnError {
@@ -56,7 +68,7 @@ func Validate(dataSet any, rules map[string][]RuleValidator, skipOnError bool) e
 			if err := validator.ValidateValue(value.Interface()); err != nil {
 				var errRes rule.Result
 				if errors.As(err, &errRes) {
-					resultSet = resultSet.WithResult(attr, errRes)
+					resultSet = resultSet.WithResult(fieldName, errRes)
 				}
 
 				if skipOnError {

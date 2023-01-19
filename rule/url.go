@@ -3,14 +3,15 @@ package rule
 import (
 	"strings"
 
-	"github.com/raoptimus/validator.go/regexpc"
 	"golang.org/x/net/idna"
+
+	"github.com/raoptimus/validator.go/regexpc"
 )
 
 var regxpDomain, _ = regexpc.Compile(`://([^/]+)`)
 
 type Url struct {
-	pattern      string
+	urlPattern   string
 	validSchemes []string
 	enableIDN    bool
 	message      string
@@ -18,7 +19,7 @@ type Url struct {
 
 func NewUrl() Url {
 	return Url{
-		pattern:      `^{schemes}:\/\/(([a-zA-Z0-9][a-zA-Z0-9_-]*)(\.[a-zA-Z0-9][a-zA-Z0-9_-]*)+)(?::\d{1,5})?([?\/#].*$|$)`,
+		urlPattern:   `^{schemes}:\/\/(([a-zA-Z0-9][a-zA-Z0-9_-]*)(\.[a-zA-Z0-9][a-zA-Z0-9_-]*)+)(?::\d{1,5})?([?\/#].*$|$)`,
 		validSchemes: []string{"http", "https"},
 		enableIDN:    false,
 		message:      "This value is not a valid URL.",
@@ -26,7 +27,7 @@ func NewUrl() Url {
 }
 
 func (u Url) WithPattern(pattern string) Url {
-	u.pattern = pattern
+	u.urlPattern = pattern
 	return u
 }
 
@@ -56,7 +57,7 @@ func (u Url) ValidateValue(value any) error {
 		v = u.convertIDN(v)
 	}
 
-	r, err := regexpc.Compile(u.getPattern())
+	r, err := regexpc.Compile(u.pattern())
 	if err != nil {
 		return NewResult().WithError(err.Error())
 	}
@@ -86,13 +87,13 @@ func (u Url) idnToASCII(idn string) string {
 	}
 }
 
-func (u Url) getPattern() string {
-	if !strings.Contains(u.pattern, "{schemes}") {
-		return u.pattern
+func (u Url) pattern() string {
+	if !strings.Contains(u.urlPattern, "{schemes}") {
+		return u.urlPattern
 	}
 
 	return strings.ReplaceAll(
-		u.pattern,
+		u.urlPattern,
 		"{schemes}",
 		"((?i)"+strings.Join(u.validSchemes, "|")+")",
 	)
