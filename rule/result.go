@@ -42,7 +42,7 @@ func (s Result) IsValid() bool {
 	return len(s.errors) == 0
 }
 
-func (s Result) GetErrors() []string {
+func (s Result) Errors() []string {
 	r := s.errors
 	return r
 }
@@ -70,7 +70,7 @@ func (s ResultSet) HasErrors() bool {
 	return len(s.results) > 0
 }
 
-func (s ResultSet) GetResult(attribute string) (Result, error) {
+func (s ResultSet) Result(attribute string) (Result, error) {
 	if r, ok := s.results[attribute]; !ok {
 		return emptyResult, ErrResultNotFound
 	} else {
@@ -94,7 +94,7 @@ func (s ResultSet) WithResult(attribute string, result Result) ResultSet {
 		return s
 	}
 
-	for _, err := range result.GetErrors() {
+	for _, err := range result.Errors() {
 		res = res.WithError(err)
 	}
 
@@ -102,7 +102,7 @@ func (s ResultSet) WithResult(attribute string, result Result) ResultSet {
 	return s
 }
 
-func (s ResultSet) GetResults() map[string]Result {
+func (s ResultSet) Results() map[string]Result {
 	ret := make(map[string]Result)
 	for attr, res := range s.results {
 		ret[attr] = res
@@ -110,10 +110,10 @@ func (s ResultSet) GetResults() map[string]Result {
 	return ret
 }
 
-func (s ResultSet) GetResultErrors() map[string][]string {
+func (s ResultSet) ResultErrors() map[string][]string {
 	ret := make(map[string][]string)
 	for attr, r := range s.results {
-		ret[attr] = r.GetErrors()
+		ret[attr] = r.Errors()
 	}
 
 	return ret
