@@ -8,6 +8,13 @@ TEST_PATTERN ?= .
 TEST_OPTIONS ?=
 COVERAGE_DIR ?= .reports
 
+unit-test:
+	@go test $(TEST_OPTIONS) -v \
+		-short \
+		-failfast \
+		-race \
+		-run $(TEST_PATTERN)
+
 test:
 	@[ -d ${COVERAGE_DIR} ] || mkdir -p ${COVERAGE_DIR}
 	@go test $(TEST_OPTIONS) \

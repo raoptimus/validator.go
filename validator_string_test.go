@@ -28,3 +28,14 @@ func TestValidatorString_EmptyStringMin1_ReturnsError(t *testing.T) {
 	err := Validate(dto, rules, false)
 	assert.NotNil(t, err)
 }
+
+func TestValidatorString_NotRequiredEmptyString_ReturnsNil(t *testing.T) {
+	dto := &testObject2{Name: nil}
+	rules := map[string][]RuleValidator{
+		"Name": {
+			rule.NewStringLength(1, 0),
+		},
+	}
+	err := Validate(dto, rules, false)
+	assert.NoError(t, err)
+}
