@@ -9,14 +9,14 @@ type Validator interface {
 }
 
 type Each struct {
-	message   string
-	validator Validator
+	message string
+	rules   []Validator
 }
 
-func NewEach(r Validator) Each {
+func NewEach(rules ...Validator) Each {
 	return Each{
-		message:   "Values is invalid",
-		validator: r,
+		message: "Values is invalid",
+		rules:   rules,
 	}
 }
 
@@ -35,8 +35,12 @@ func (e Each) ValidateValue(value any) error {
 	vs := reflect.ValueOf(value)
 	for i := 0; i < vs.Len(); i++ {
 		v := vs.Index(i).Interface()
-		if err := e.validator.ValidateValue(v); err != nil {
-			result = result.WithError(err.Error())
+
+		for _, r := range e.rules {
+			// todo: use like validator.Validate
+			if err := r.ValidateValue(v); err != nil {
+				result = result.WithError(err.Error())
+			}
 		}
 	}
 
