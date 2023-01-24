@@ -1,9 +1,5 @@
 package rule
 
-import (
-	"reflect"
-)
-
 type InRange struct {
 	message     string
 	rangeValues []any
@@ -29,19 +25,14 @@ func (r InRange) Not() InRange {
 }
 
 func (r InRange) ValidateValue(value any) error {
-	v := reflect.ValueOf(value)
-	if !v.IsValid() || (v.Kind() == reflect.Ptr && v.IsNil()) {
-		return NewResult().WithError(formatMessage(r.message))
-	}
-
-	v = reflect.Indirect(v)
-	if !v.IsValid() {
+	v, valid := indirectValue(value)
+	if !valid {
 		return NewResult().WithError(formatMessage(r.message))
 	}
 
 	var in bool
 	for _, rv := range r.rangeValues {
-		if rv == v.Interface() {
+		if rv == v {
 			in = true
 			break
 		}

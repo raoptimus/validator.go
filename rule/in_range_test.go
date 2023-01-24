@@ -15,3 +15,8 @@ func TestEach_ValidateValue_NotHasValue_NoError(t *testing.T) {
 	err := NewInRange([]any{"two"}).ValidateValue("one")
 	assert.Error(t, err)
 }
+
+func TestEach_ValidateValue_ValueIsNil_ReturnsError(t *testing.T) {
+	err := NewInRange([]any{"two"}).ValidateValue(nil)
+	assert.Error(t, err)
+}

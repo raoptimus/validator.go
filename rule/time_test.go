@@ -2,11 +2,13 @@ package rule
 
 import (
 	"testing"
+	"time"
 
+	"github.com/raoptimus/validator.go/ctype"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTime_ValidateValue_ValidValue_NoError(t *testing.T) {
+func TestTime_ValidateValue_ValidValueString_NoError(t *testing.T) {
 	// utc
 	err := NewTime().ValidateValue("2006-01-02T15:04:05Z")
 	assert.NoError(t, err)
@@ -16,7 +18,25 @@ func TestTime_ValidateValue_ValidValue_NoError(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestTime_ValidateValue_InvalidValue_Error(t *testing.T) {
+func TestTime_ValidateValue_InvalidValueString_Error(t *testing.T) {
 	err := NewTime().ValidateValue("2006-01-02 15:04:05")
 	assert.Error(t, err)
+}
+
+func TestTime_ValidateValue_ValueIsNil_Error(t *testing.T) {
+	err := NewTime().ValidateValue(nil)
+	assert.Error(t, err)
+}
+
+func TestTime_ValidateValue_ValueIsObject_NoError(t *testing.T) {
+	tm := ctype.Time{}
+	err := tm.UnmarshalJSON([]byte("2006-01-02T15:04:05Z"))
+	assert.NoError(t, err)
+
+	err = NewTime().ValidateValue(tm)
+	assert.NoError(t, err)
+
+	assert.NotNil(t, tm.Time())
+	assert.Equal(t, "2006-01-02T15:04:05Z", tm.String())
+	assert.Equal(t, "2006-01-02T15:04:05Z", tm.Time().Format(time.RFC3339))
 }

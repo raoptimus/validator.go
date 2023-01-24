@@ -2,6 +2,8 @@ package rule
 
 import (
 	"time"
+
+	"github.com/raoptimus/validator.go/ctype"
 )
 
 type Time struct {
@@ -62,15 +64,24 @@ func (t Time) WithMax(max time.Time) Time {
 }
 
 func (t Time) ValidateValue(value any) error {
-	v, ok := value.(string)
-	if !ok {
+	v, valid := indirectValue(value)
+	if !valid {
 		return NewResult().WithError(formatMessage(t.message))
 	}
 
-	result := NewResult()
-	vt, err := time.Parse(t.format, v)
+	vStr, okStr := v.(string)
+	vObj, okObj := v.(ctype.Time)
+	if !okStr && !okObj {
+		return NewResult().WithError(formatMessage(t.message))
+	}
+
+	if okObj {
+		vStr = vObj.String()
+	}
+
+	vt, err := time.Parse(t.format, vStr)
 	if err != nil {
-		result = result.WithError(
+		return NewResult().WithError(
 			formatMessageWithArgs(
 				t.formatMessage,
 				map[string]any{
@@ -79,6 +90,8 @@ func (t Time) ValidateValue(value any) error {
 			),
 		)
 	}
+
+	result := NewResult()
 
 	if t.min != nil && vt.Before(*t.min) {
 		result = result.WithError(
@@ -103,6 +116,10 @@ func (t Time) ValidateValue(value any) error {
 	}
 
 	if result.IsValid() {
+		if okObj {
+			*vObj.Time() = vt
+		}
+
 		return nil
 	}
 

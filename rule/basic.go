@@ -6,6 +6,20 @@ import (
 	"strings"
 )
 
+func indirectValue(v any) (value any, isValid bool) {
+	val := reflect.ValueOf(v)
+	if !val.IsValid() || (val.Kind() == reflect.Ptr && val.IsNil()) {
+		return nil, false
+	}
+
+	val = reflect.Indirect(val)
+	if !val.IsValid() {
+		return nil, false
+	}
+
+	return val.Interface(), true
+}
+
 func formatMessageWithArgs(message string, arguments map[string]any) string {
 	for attr, valAny := range arguments {
 		attrPlaceholder := "{" + attr + "}"
