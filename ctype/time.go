@@ -17,12 +17,12 @@ type Time struct {
 	unvalidatedTime string
 }
 
-func (t *Time) Time() *time.Time {
+func (t *Time) Time() (*time.Time, error) {
 	if t.validatedTime == nil {
-		t.validatedTime = &time.Time{}
+		return nil, ErrNotFilledTime
 	}
 
-	return t.validatedTime
+	return t.validatedTime, nil
 }
 
 func (t *Time) String() string {
