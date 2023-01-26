@@ -53,3 +53,15 @@ func (t *Time) UnmarshalText(data []byte) error {
 
 	return nil
 }
+
+// MarshalJSON implements the json.Marshaler interface.
+func (t *Time) MarshalJSON() ([]byte, error) {
+	data := []byte("\"" + t.unvalidatedTime + "\"")
+	return data, nil
+}
+
+// MarshalText implements the encoding.TextMarshaler interface.
+func (t *Time) MarshalText() ([]byte, error) {
+	data := []byte("\"" + t.unvalidatedTime + "\"")
+	return data, nil
+}
