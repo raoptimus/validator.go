@@ -117,12 +117,7 @@ func (t Time) ValidateValue(value any) error {
 
 	if result.IsValid() {
 		if okObj {
-			t, err := vObj.Time()
-			if err != nil {
-				return err
-			}
-
-			*t = vt
+			*vObj.Time() = vt
 		}
 
 		return nil

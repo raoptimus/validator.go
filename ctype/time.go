@@ -17,12 +17,12 @@ type Time struct {
 	unvalidatedTime string
 }
 
-func (t *Time) Time() (*time.Time, error) {
+func (t *Time) Time() *time.Time {
 	if t.validatedTime == nil {
-		return nil, ErrNotFilledTime
+		t.validatedTime = &time.Time{}
 	}
 
-	return t.validatedTime, nil
+	return t.validatedTime
 }
 
 func (t *Time) String() string {
@@ -35,14 +35,21 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		return nil
 	}
+
 	t.unvalidatedTime = strings.Trim(string(data), "\"")
-	t.validatedTime = &time.Time{}
+	if t.validatedTime == nil {
+		t.validatedTime = &time.Time{}
+	}
+
 	return nil
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (t *Time) UnmarshalText(data []byte) error {
 	t.unvalidatedTime = string(data)
-	t.validatedTime = &time.Time{}
+	if t.validatedTime == nil {
+		t.validatedTime = &time.Time{}
+	}
+
 	return nil
 }
