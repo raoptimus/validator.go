@@ -1,6 +1,7 @@
 package ctype
 
 import (
+	"strings"
 	"time"
 )
 
@@ -10,6 +11,10 @@ type Time struct {
 }
 
 func (t *Time) Time() *time.Time {
+	if t.validatedTime == nil {
+		t.validatedTime = &time.Time{}
+	}
+
 	return t.validatedTime
 }
 
@@ -23,9 +28,8 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		return nil
 	}
-	t.unvalidatedTime = string(data)
-	tm := time.UnixMilli(0)
-	t.validatedTime = &tm
+	t.unvalidatedTime = strings.Trim(string(data), "\"")
+	t.validatedTime = &time.Time{}
 	return nil
 }
 
