@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+func NewTime(unvalidatedTime string) Time {
+	return Time{
+		validatedTime:   &time.Time{},
+		unvalidatedTime: unvalidatedTime,
+	}
+}
+
 type Time struct {
 	validatedTime   *time.Time
 	unvalidatedTime string
@@ -36,5 +43,6 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (t *Time) UnmarshalText(data []byte) error {
 	t.unvalidatedTime = string(data)
+	t.validatedTime = &time.Time{}
 	return nil
 }
