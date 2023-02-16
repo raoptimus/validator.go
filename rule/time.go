@@ -6,7 +6,7 @@ import (
 	"github.com/raoptimus/validator.go/ctype"
 )
 
-type FuncTime func() time.Time
+type TimeFunc func() time.Time
 
 type Time struct {
 	message         string
@@ -14,8 +14,8 @@ type Time struct {
 	tooBigMessage   string
 	tooSmallMessage string
 	format          string
-	min             FuncTime
-	max             FuncTime
+	min             TimeFunc
+	max             TimeFunc
 }
 
 func NewTime() Time {
@@ -55,12 +55,12 @@ func (t Time) WithFormat(format string) Time {
 	return t
 }
 
-func (t Time) WithMin(min FuncTime) Time {
+func (t Time) WithMin(min TimeFunc) Time {
 	t.min = min
 	return t
 }
 
-func (t Time) WithMax(max FuncTime) Time {
+func (t Time) WithMax(max TimeFunc) Time {
 	t.max = max
 	return t
 }
@@ -95,7 +95,8 @@ func (t Time) ValidateValue(value any) error {
 
 	result := NewResult()
 
-	if t.min != nil && vt.Before(t.min()) {
+	minTime := t.min()
+	if t.min != nil && vt.Before(minTime) {
 		result = result.WithError(
 			formatMessageWithArgs(
 				t.tooSmallMessage,
@@ -106,7 +107,8 @@ func (t Time) ValidateValue(value any) error {
 		)
 	}
 
-	if t.max != nil && vt.After(t.max()) {
+	maxTime := t.max()
+	if t.max != nil && vt.After(maxTime) {
 		result = result.WithError(
 			formatMessageWithArgs(
 				t.tooBigMessage,
