@@ -95,28 +95,32 @@ func (t Time) ValidateValue(value any) error {
 
 	result := NewResult()
 
-	minTime := t.min()
-	if vt.Before(minTime) {
-		result = result.WithError(
-			formatMessageWithArgs(
-				t.tooSmallMessage,
-				map[string]any{
-					"min": minTime,
-				},
-			),
-		)
+	if t.min != nil {
+		minTime := t.min()
+		if vt.Before(minTime) {
+			result = result.WithError(
+				formatMessageWithArgs(
+					t.tooSmallMessage,
+					map[string]any{
+						"min": minTime,
+					},
+				),
+			)
+		}
 	}
 
-	maxTime := t.max()
-	if vt.After(maxTime) {
-		result = result.WithError(
-			formatMessageWithArgs(
-				t.tooBigMessage,
-				map[string]any{
-					"max": maxTime,
-				},
-			),
-		)
+	if t.max != nil {
+		maxTime := t.max()
+		if vt.After(maxTime) {
+			result = result.WithError(
+				formatMessageWithArgs(
+					t.tooBigMessage,
+					map[string]any{
+						"max": maxTime,
+					},
+				),
+			)
+		}
 	}
 
 	if result.IsValid() {
