@@ -101,7 +101,7 @@ func (t Time) ValidateValue(value any) error {
 			formatMessageWithArgs(
 				t.tooSmallMessage,
 				map[string]any{
-					"min": t.min(),
+					"min": minTime,
 				},
 			),
 		)
@@ -113,7 +113,7 @@ func (t Time) ValidateValue(value any) error {
 			formatMessageWithArgs(
 				t.tooBigMessage,
 				map[string]any{
-					"max": t.max(),
+					"max": maxTime,
 				},
 			),
 		)
