@@ -96,7 +96,7 @@ func (t Time) ValidateValue(value any) error {
 	result := NewResult()
 
 	minTime := t.min()
-	if t.min != nil && vt.Before(minTime) {
+	if vt.Before(minTime) {
 		result = result.WithError(
 			formatMessageWithArgs(
 				t.tooSmallMessage,
@@ -108,7 +108,7 @@ func (t Time) ValidateValue(value any) error {
 	}
 
 	maxTime := t.max()
-	if t.max != nil && vt.After(maxTime) {
+	if vt.After(maxTime) {
 		result = result.WithError(
 			formatMessageWithArgs(
 				t.tooBigMessage,
