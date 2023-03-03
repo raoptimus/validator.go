@@ -18,6 +18,9 @@ type testObject2 struct {
 type testObject3 struct {
 	Name *string `json:"name"`
 }
+type testObject4 struct {
+	Names []string
+}
 
 func TestValidatorRequired_EmptyString_ReturnsExpectedError(t *testing.T) {
 	dto := &testObject{Name: ""}
@@ -114,4 +117,26 @@ func TestValidatorRequired_NotExistProperty_ReturnsExpectedError(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, "undefined property: validator.testObject.NotExists", err.Error())
 	assert.Equal(t, ErrUndefinedField, errors.Unwrap(err))
+}
+
+func TestValidatorRequired_NotEmptySlice_ReturnsExpectedNil(t *testing.T) {
+	dto := &testObject4{Names: []string{"123"}}
+	rules := map[string][]RuleValidator{
+		"Names": {
+			rule.NewRequired(),
+		},
+	}
+	err := Validate(dto, rules, false)
+	assert.Nil(t, err)
+}
+
+func TestValidatorRequired_EmptySlice_ReturnsExpectedError(t *testing.T) {
+	dto := &testObject4{Names: nil}
+	rules := map[string][]RuleValidator{
+		"Names": {
+			rule.NewRequired(),
+		},
+	}
+	err := Validate(dto, rules, false)
+	assert.NotNil(t, err)
 }

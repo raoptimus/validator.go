@@ -43,8 +43,14 @@ func valueIsEmpty(value reflect.Value) bool {
 		return true
 	}
 
-	if value.Kind() == reflect.String {
+	kind := value.Kind()
+	switch kind {
+	case reflect.String:
 		if len(strings.Trim(value.String(), " ")) == 0 {
+			return true
+		}
+	case reflect.Slice:
+		if value.Len() == 0 {
 			return true
 		}
 	}
