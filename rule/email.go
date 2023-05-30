@@ -1,33 +1,25 @@
 package rule
 
-import (
-	"strings"
+const (
+	emailRegexp = `^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`
 )
 
 type Email struct {
-	message string
+	basicRule MatchRegularExpression
 }
 
 func NewEmail() Email {
 	return Email{
-		message: "Email is not a valid email",
+		basicRule: NewMatchRegularExpression(emailRegexp).
+			WithMessage("Invalid Email format."),
 	}
 }
 
-func (e *Email) ValidateValue(value any) error {
-	v, ok := value.(string)
-	if !ok {
-		return NewResult().WithError(formatMessage(e.message))
-	}
+func (s Email) WithMessage(message string) Email {
+	s.basicRule = s.basicRule.WithMessage(message)
+	return s
+}
 
-	if !strings.Contains(v, "@") {
-		return NewResult().WithError(formatMessage(e.message))
-	}
-
-	result := NewResult()
-
-	if !result.IsValid() {
-		return result
-	}
-	return nil
+func (s Email) ValidateValue(value any) error {
+	return s.basicRule.ValidateValue(value)
 }
