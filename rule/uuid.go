@@ -22,11 +22,16 @@ func (s UUID) WithMessage(message string) UUID {
 }
 
 func (s UUID) ValidateValue(value any) error {
-	if err := s.basicRule.ValidateValue(value); err != nil {
+	v, ok := toString(value)
+	if !ok {
+		return NewResult().WithError(formatMessage(s.basicRule.message))
+	}
+
+	if err := s.basicRule.ValidateValue(v); err != nil {
 		return err
 	}
 
-	if v, ok := value.(string); !ok || v == zeroUUID {
+	if v == zeroUUID {
 		return NewResult().WithError(formatMessage(s.basicRule.message))
 	}
 

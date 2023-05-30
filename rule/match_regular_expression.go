@@ -22,7 +22,7 @@ func (s MatchRegularExpression) WithMessage(message string) MatchRegularExpressi
 }
 
 func (s MatchRegularExpression) ValidateValue(value any) error {
-	v, ok := value.(string)
+	v, ok := toString(value)
 	if !ok {
 		return NewResult().WithError(formatMessage(s.message))
 	}
