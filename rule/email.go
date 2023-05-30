@@ -11,7 +11,7 @@ type Email struct {
 func NewEmail() Email {
 	return Email{
 		basicRule: NewMatchRegularExpression(emailRegexp).
-			WithMessage("Invalid Email format."),
+			WithMessage("Email is not a valid email."),
 	}
 }
 

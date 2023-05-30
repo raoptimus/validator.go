@@ -1,8 +1,6 @@
 package rule
 
 import (
-	"fmt"
-
 	"github.com/raoptimus/validator.go/regexpc"
 )
 
@@ -38,18 +36,4 @@ func (s MatchRegularExpression) ValidateValue(value any) error {
 		return NewResult().WithError(formatMessage(s.message))
 	}
 	return nil
-}
-
-func toString(v any) (string, bool) {
-	str, ok := v.(string)
-	if !ok {
-		i, ok := v.(fmt.Stringer)
-		if !ok {
-			return "", false
-		}
-
-		str = i.String()
-	}
-
-	return str, true
 }

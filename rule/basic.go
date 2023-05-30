@@ -57,3 +57,17 @@ func valueIsEmpty(value reflect.Value) bool {
 
 	return false
 }
+
+func toString(v any) (string, bool) {
+	str, ok := v.(string)
+	if !ok {
+		i, ok := v.(fmt.Stringer)
+		if !ok {
+			return "", false
+		}
+
+		str = i.String()
+	}
+
+	return str, true
+}
