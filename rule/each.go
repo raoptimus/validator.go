@@ -15,7 +15,7 @@ type Each struct {
 
 func NewEach(rules ...Validator) Each {
 	return Each{
-		message: "Values is invalid",
+		message: "Value is invalid",
 		rules:   rules,
 	}
 }

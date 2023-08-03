@@ -2,6 +2,7 @@ package rule
 
 import (
 	"strings"
+	"unicode/utf8"
 )
 
 type StringLength struct {
@@ -47,7 +48,7 @@ func (s StringLength) ValidateValue(value any) error {
 
 	result := NewResult()
 	v = strings.Trim(v, " ")
-	l := len(v)
+	l := utf8.RuneCountInString(v)
 
 	if l < s.min {
 		result = result.WithError(formatMessageWithArgs(s.tooShortMessage,
