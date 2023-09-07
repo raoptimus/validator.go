@@ -3,6 +3,7 @@ package validator
 import (
 	"errors"
 	"reflect"
+	"strings"
 
 	"github.com/raoptimus/validator.go/rule"
 )
@@ -64,6 +65,9 @@ func Validate(dataSet any, rules map[string][]RuleValidator, skipOnError bool) e
 		fieldName := attr
 		if field, ok := t.FieldByName(attr); ok {
 			if v, ok := field.Tag.Lookup("json"); ok {
+				if name, _, found := strings.Cut(v, ","); found {
+					v = name
+				}
 				fieldName = v
 			}
 		}

@@ -58,8 +58,10 @@ func NewResultSet() ResultSet {
 }
 
 func (s ResultSet) Error() string {
-	summary := strings.Builder{}
-	for _, v := range s.results {
+	var summary strings.Builder
+	for k, v := range s.results {
+		summary.WriteString(k)
+		summary.WriteString(": ")
 		summary.WriteString(v.Error())
 		summary.WriteString("\n")
 	}
