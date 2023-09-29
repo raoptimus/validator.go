@@ -80,6 +80,15 @@ func (s ResultSet) Result(attribute string) (Result, error) {
 	}
 }
 
+func (s ResultSet) WithError(attribute string, err error) ResultSet {
+	var result Result
+	if errors.As(err, &result) {
+		return s.WithResult(attribute, result)
+	}
+
+	return s.WithResult(attribute, result.WithError(err.Error()))
+}
+
 func (s ResultSet) WithResult(attribute string, result Result) ResultSet {
 	if result.IsValid() {
 		return s
