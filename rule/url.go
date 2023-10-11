@@ -1,6 +1,7 @@
 package rule
 
 import (
+	"net/url"
 	"strings"
 
 	"golang.org/x/net/idna"
@@ -11,7 +12,6 @@ import (
 var regxpDomain, _ = regexpc.Compile(`://([^/]+)`)
 
 type Url struct {
-	urlPattern   string
 	validSchemes []string
 	enableIDN    bool
 	message      string
@@ -19,16 +19,10 @@ type Url struct {
 
 func NewUrl() Url {
 	return Url{
-		urlPattern:   `^{schemes}:\/\/(([a-zA-Z0-9][a-zA-Z0-9_-]*)(\.[a-zA-Z0-9][a-zA-Z0-9_-]*)+)(?::\d{1,5})?([?\/#].*$|$)`,
 		validSchemes: []string{"http", "https"},
 		enableIDN:    false,
 		message:      "This value is not a valid URL.",
 	}
-}
-
-func (u Url) WithPattern(pattern string) Url {
-	u.urlPattern = pattern
-	return u
 }
 
 func (u Url) WithValidScheme(scheme ...string) Url {
@@ -57,14 +51,29 @@ func (u Url) ValidateValue(value any) error {
 		v = u.convertIDN(v)
 	}
 
-	r, err := regexpc.Compile(u.pattern())
+	uri, err := url.Parse(v)
 	if err != nil {
-		return NewResult().WithError(err.Error())
-	}
-
-	if !r.MatchString(v) {
 		return NewResult().WithError(formatMessage(u.message))
 	}
+
+	if len(uri.Scheme) == 0 || (len(uri.Host) == 0 && len(uri.Opaque) == 0) {
+		return NewResult().WithError(formatMessage(u.message))
+	}
+
+	if len(u.validSchemes) > 0 && u.validSchemes[0] != "*" {
+		isValidScheme := false
+		for _, s := range u.validSchemes {
+			if s == uri.Scheme {
+				isValidScheme = true
+				break
+			}
+		}
+
+		if !isValidScheme {
+			return NewResult().WithError(formatMessage(u.message))
+		}
+	}
+
 	return nil
 }
 
@@ -85,16 +94,4 @@ func (u Url) idnToASCII(idn string) string {
 	} else {
 		return idn
 	}
-}
-
-func (u Url) pattern() string {
-	if !strings.Contains(u.urlPattern, "{schemes}") {
-		return u.urlPattern
-	}
-
-	return strings.ReplaceAll(
-		u.urlPattern,
-		"{schemes}",
-		"((?i)"+strings.Join(u.validSchemes, "|")+")",
-	)
 }
