@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/raoptimus/validator.go/rule"
+	"golang.org/x/net/context"
 )
 
 var ErrUndefinedField = errors.New("undefined property")
@@ -23,7 +24,9 @@ func (u *UndefinedFieldErr) Unwrap() error {
 	return ErrUndefinedField
 }
 
-func Validate(dataSet any, rules map[string][]RuleValidator, skipOnError bool) error {
+func Validate(ctx context.Context, dataSet any, rules map[string][]RuleValidator, skipOnError bool) error {
+	fieldPrefix, hasFieldPrefix := FieldPrefixFromContext(ctx)
+
 	resultSet := rule.NewResultSet()
 
 	pm := reflect.ValueOf(dataSet)
@@ -72,6 +75,10 @@ func Validate(dataSet any, rules map[string][]RuleValidator, skipOnError bool) e
 			}
 		}
 
+		if hasFieldPrefix {
+			fieldName = fieldPrefix + "." + fieldName
+		}
+
 		if requiredIndex != -1 {
 			required := validatorRules[requiredIndex]
 			if _, ok := required.(rule.Required); ok {
@@ -108,4 +115,12 @@ func Validate(dataSet any, rules map[string][]RuleValidator, skipOnError bool) e
 		return resultSet
 	}
 	return nil
+}
+
+func Attribute(ctx context.Context, attribute string) string {
+	if prefix, ok := FieldPrefixFromContext(ctx); ok {
+		attribute = prefix + "." + attribute
+	}
+
+	return attribute
 }
