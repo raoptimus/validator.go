@@ -11,6 +11,8 @@ import (
 
 var regxpDomain, _ = regexpc.Compile(`://([^/]+)`)
 
+const AllowAnyURLSchema = "*"
+
 type Url struct {
 	validSchemes []string
 	enableIDN    bool
@@ -60,7 +62,7 @@ func (u Url) ValidateValue(value any) error {
 		return NewResult().WithError(formatMessage(u.message))
 	}
 
-	if len(u.validSchemes) > 0 && u.validSchemes[0] != "*" {
+	if len(u.validSchemes) > 0 && u.validSchemes[0] != AllowAnyURLSchema {
 		isValidScheme := false
 		for _, s := range u.validSchemes {
 			if s == uri.Scheme {

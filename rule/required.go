@@ -5,12 +5,14 @@ import (
 )
 
 type Required struct {
-	message string
+	message        string
+	allowZeroValue bool
 }
 
 func NewRequired() Required {
 	return Required{
-		message: "Value cannot be blank.",
+		message:        "Value cannot be blank.",
+		allowZeroValue: false,
 	}
 }
 
@@ -19,9 +21,14 @@ func (s Required) WithMessage(message string) Required {
 	return s
 }
 
+func (s Required) WithAllowZeroValue() Required {
+	s.allowZeroValue = true
+	return s
+}
+
 func (s Required) ValidateValue(value any) error {
 	v := reflect.ValueOf(value)
-	if valueIsEmpty(v) {
+	if valueIsEmpty(v, s.allowZeroValue) {
 		return NewResult().WithError(formatMessage(s.message))
 	}
 

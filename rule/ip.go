@@ -33,10 +33,7 @@ func (s IP) ValidateValue(value any) error {
 		return NewResult().WithError(formatMessage(s.message))
 	}
 
-	result := NewResult()
+	// TODO: implement ipv4 and ipv4 validations
 
-	if !result.IsValid() {
-		return result
-	}
 	return nil
 }

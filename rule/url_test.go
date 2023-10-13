@@ -27,7 +27,7 @@ func TestUrl_ValidateValue_Schema(t *testing.T) {
 }
 
 func TestUrl_ValidateValue_AnySchema(t *testing.T) {
-	r := NewUrl().WithValidScheme("*")
+	r := NewUrl().WithValidScheme(AllowAnyURLSchema)
 
 	err := r.ValidateValue("http://example.com")
 	assert.NoError(t, err)
