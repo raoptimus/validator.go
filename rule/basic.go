@@ -38,8 +38,8 @@ func formatMessage(message string) string {
 	return message
 }
 
-func valueIsEmpty(value reflect.Value) bool {
-	if !value.IsValid() || value.IsZero() {
+func valueIsEmpty(value reflect.Value, allowZeroValue bool) bool {
+	if !value.IsValid() || (!allowZeroValue && value.IsZero()) {
 		return true
 	}
 
@@ -51,6 +51,10 @@ func valueIsEmpty(value reflect.Value) bool {
 		}
 	case reflect.Slice:
 		if value.Len() == 0 {
+			return true
+		}
+	case reflect.Ptr:
+		if value.IsNil() {
 			return true
 		}
 	}

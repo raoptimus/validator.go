@@ -7,7 +7,35 @@ import (
 )
 
 func TestUrl_ValidateValue_Successfully(t *testing.T) {
-	err := NewUrl().ValidateValue("https://example.com")
+	r := NewUrl()
+
+	err := r.ValidateValue("https://example.com")
+	assert.NoError(t, err)
+}
+
+func TestUrl_ValidateValue_Schema(t *testing.T) {
+	r := NewUrl().WithValidScheme("http", "myphotoapp")
+
+	err := r.ValidateValue("http://example.com")
+	assert.NoError(t, err)
+
+	err = r.ValidateValue("myphotoapp:test?name=123")
+	assert.NoError(t, err)
+
+	err = r.ValidateValue("https://example.com")
+	assert.Error(t, err)
+}
+
+func TestUrl_ValidateValue_AnySchema(t *testing.T) {
+	r := NewUrl().WithValidScheme(AllowAnyURLSchema)
+
+	err := r.ValidateValue("http://example.com")
+	assert.NoError(t, err)
+
+	err = r.ValidateValue("myphotoapp:test?name=123")
+	assert.NoError(t, err)
+
+	err = r.ValidateValue("https://example.com")
 	assert.NoError(t, err)
 }
 
@@ -22,7 +50,12 @@ func TestUrlValidateValue_EmptyValue_ReturnsError(t *testing.T) {
 }
 
 func TestUrlValidateValue_InvalidValue_ReturnsError(t *testing.T) {
-	err := NewUrl().ValidateValue("http://")
+	r := NewUrl()
+
+	err := r.ValidateValue("http://")
+	assert.Error(t, err)
+
+	err = r.ValidateValue("myphotoapp test?name=123")
 	assert.Error(t, err)
 }
 

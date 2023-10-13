@@ -124,3 +124,11 @@ func Attribute(ctx context.Context, attribute string) string {
 
 	return attribute
 }
+
+func FieldPrefixOrAttribute(ctx context.Context, attribute string) string {
+	if prefix, ok := FieldPrefixFromContext(ctx); ok {
+		return prefix
+	}
+
+	return attribute
+}

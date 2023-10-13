@@ -1,38 +1,66 @@
 package rule
 
+import "github.com/gofrs/uuid"
+
+type UUIDVersion byte
+
 const (
-	uuidRegexp = `^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$`
-	zeroUUID   = "00000000-0000-0000-0000-000000000000"
+	UUIDVersionV1 UUIDVersion = 1
+	UUIDVersionV3 UUIDVersion = 3
+	UUIDVersionV4 UUIDVersion = 4
+	UUIDVersionV5 UUIDVersion = 5
+	UUIDVersionV6 UUIDVersion = 6
+	UUIDVersionV7 UUIDVersion = 7
 )
 
 type UUID struct {
-	basicRule MatchRegularExpression
+	message               string
+	invalidVersionMessage string
+	version               UUIDVersion
 }
 
 func NewUUID() UUID {
 	return UUID{
-		basicRule: NewMatchRegularExpression(uuidRegexp).
-			WithMessage("Invalid UUID format."),
+		message:               "Invalid UUID format.",
+		invalidVersionMessage: "UUID version must be equal to {version}.",
 	}
 }
 
 func (s UUID) WithMessage(message string) UUID {
-	s.basicRule = s.basicRule.WithMessage(message)
+	s.message = message
+	return s
+}
+
+func (s UUID) WithInvalidVersionMessage(message string) UUID {
+	s.invalidVersionMessage = message
+	return s
+}
+
+func (s UUID) WithVersion(version UUIDVersion) UUID {
+	s.version = version
 	return s
 }
 
 func (s UUID) ValidateValue(value any) error {
 	v, ok := toString(value)
 	if !ok {
-		return NewResult().WithError(formatMessage(s.basicRule.message))
+		return NewResult().WithError(formatMessage(s.message))
 	}
 
-	if err := s.basicRule.ValidateValue(v); err != nil {
-		return err
+	parsedUUID, err := uuid.FromString(v)
+	if err != nil {
+		return NewResult().
+			WithError(formatMessage(s.message))
 	}
 
-	if v == zeroUUID {
-		return NewResult().WithError(formatMessage(s.basicRule.message))
+	if parsedUUID.IsNil() {
+		return NewResult().
+			WithError(formatMessage(s.message))
+	}
+
+	if s.version > 0 && byte(s.version) != parsedUUID.Version() {
+		return NewResult().
+			WithError(formatMessageWithArgs(s.invalidVersionMessage, map[string]any{"version": s.version}))
 	}
 
 	return nil

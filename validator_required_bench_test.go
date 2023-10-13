@@ -1,13 +1,14 @@
 package validator
 
 import (
+	"context"
 	"testing"
 
 	"github.com/raoptimus/validator.go/rule"
 )
 
 func BenchmarkValidatorRequired(b *testing.B) {
-	b.ReportAllocs()
+	ctx := context.Background()
 	dto := &testObject{Name: "test"}
 	rules := map[string][]RuleValidator{
 		"Name": {
@@ -15,8 +16,11 @@ func BenchmarkValidatorRequired(b *testing.B) {
 		},
 	}
 
+	b.ReportAllocs()
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
-		err := Validate(dto, rules, false)
+		err := Validate(ctx, dto, rules, false)
 		if err != nil {
 			b.Error(err)
 		}
