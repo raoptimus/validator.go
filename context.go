@@ -1,30 +1,35 @@
 package validator
 
-import "golang.org/x/net/context"
+import (
+	"context"
 
-type ContextKey uint8
-
-const (
-	ContextKeyFieldPrefix ContextKey = iota + 1
+	"github.com/raoptimus/validator.go/set"
 )
 
-func FieldPrefixFromContext(ctx context.Context) (string, bool) {
-	if ctx == nil {
-		return "", false
-	}
+type Key uint8
 
-	prefix, ok := ctx.Value(ContextKeyFieldPrefix).(string)
-	if !ok {
-		return "", false
-	}
+const (
+	KeyDataSet Key = iota + 1
+)
 
-	return prefix, true
+type DataSet interface {
+	FieldValue(name string) (any, error)
+	FieldAliasName(name string) string
+	Name() set.Name
+	Data() any
 }
 
-func ContextWithFieldPrefix(ctx context.Context, prefix string) context.Context {
-	if prevPrefix, ok := FieldPrefixFromContext(ctx); ok {
-		prefix = prevPrefix + "." + prefix
+func withDataSet(ctx context.Context, ds DataSet) context.Context {
+	return context.WithValue(ctx, KeyDataSet, ds)
+}
+
+func extractDataSet(ctx context.Context) (DataSet, bool) {
+	if ctx == nil {
+		return nil, false
+	}
+	if ds, ok := ctx.Value(KeyDataSet).(DataSet); ok {
+		return ds, true
 	}
 
-	return context.WithValue(ctx, ContextKeyFieldPrefix, prefix)
+	return nil, false
 }

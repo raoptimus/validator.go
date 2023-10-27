@@ -1,134 +1,170 @@
 package validator
 
 import (
+	"context"
 	"errors"
 	"reflect"
-	"strings"
 
-	"github.com/raoptimus/validator.go/rule"
-	"golang.org/x/net/context"
+	"github.com/raoptimus/validator.go/set"
 )
 
-var ErrUndefinedField = errors.New("undefined property")
-
-type UndefinedFieldErr struct {
-	DataSetName   string
-	AttributeName string
-}
-
-func (u *UndefinedFieldErr) Error() string {
-	return ErrUndefinedField.Error() + ": " + u.DataSetName + "." + u.AttributeName
-}
-
-func (u *UndefinedFieldErr) Unwrap() error {
-	return ErrUndefinedField
-}
-
-func Validate(ctx context.Context, dataSet any, rules map[string][]RuleValidator, skipOnError bool) error {
-	fieldPrefix, hasFieldPrefix := FieldPrefixFromContext(ctx)
-
-	resultSet := rule.NewResultSet()
-
-	pm := reflect.ValueOf(dataSet)
-	vm := reflect.Indirect(pm)
-
-	t := reflect.TypeOf(dataSet)
-	if t.Kind() == reflect.Pointer {
-		t = t.Elem()
+func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
+	if len(rules) == 0 {
+		return nil
 	}
 
-	var requiredIndex int
+	dataSet, err := normalizeDataSet(value)
+	if err != nil {
+		return err
+	}
 
-	for attr, validatorRules := range rules {
-		value := vm.FieldByName(attr)
-		if !value.IsValid() {
-			return &UndefinedFieldErr{vm.Type().String(), attr}
-		}
+	if extDS, ok := extractDataSet(ctx); !ok || value != extDS {
+		ctx = withDataSet(ctx, dataSet)
+	}
 
-		// find required validator
-		requiredIndex = -1
-		for i, validator := range validatorRules {
-			if _, ok := validator.(rule.Required); ok {
-				requiredIndex = i
-				break
-			}
-		}
+	rules = normalizeRules(rules)
+	result := NewResult()
 
-		if value.Kind() == reflect.Pointer {
-			if value.IsNil() {
+	for _, validatorRule := range rules {
+		if _, ok := validatorRule.(Required); !ok {
+			if value == nil {
 				// if value is not required and is nil
-				if requiredIndex == -1 {
-					continue
-				}
-			} else {
-				value = reflect.Indirect(value)
-			}
-		}
-
-		fieldName := attr
-		if field, ok := t.FieldByName(attr); ok {
-			if v, ok := field.Tag.Lookup("json"); ok {
-				if name, _, found := strings.Cut(v, ","); found {
-					v = name
-				}
-				fieldName = v
-			}
-		}
-
-		if hasFieldPrefix {
-			fieldName = fieldPrefix + "." + fieldName
-		}
-
-		if requiredIndex != -1 {
-			required := validatorRules[requiredIndex]
-			if _, ok := required.(rule.Required); ok {
-				if err := required.ValidateValue(value.Interface()); err != nil {
-					var errRes rule.Result
-					if errors.As(err, &errRes) {
-						resultSet = resultSet.WithResult(fieldName, errRes)
-					}
-
-					continue
-				}
-			}
-		}
-
-		for i, validator := range validatorRules {
-			if requiredIndex == i {
 				continue
 			}
+		}
 
-			if err := validator.ValidateValue(value.Interface()); err != nil {
-				var errRes rule.Result
-				if errors.As(err, &errRes) {
-					resultSet = resultSet.WithResult(fieldName, errRes)
+		if err := validatorRule.ValidateValue(ctx, value); err != nil {
+			var errRes Result
+			if errors.As(err, &errRes) {
+				for _, rErr := range errRes.Errors() {
+					result = result.WithError(rErr)
 				}
-
-				if skipOnError {
-					break
-				}
+			} else {
+				return err
 			}
 		}
 	}
 
-	if resultSet.HasErrors() {
-		return resultSet
+	if result.IsValid() {
+		return nil
 	}
+
+	for _, err := range result.Errors() {
+		err.Message = DefaultTranslator.Translate(ctx, err.Message, err.Params)
+	}
+
+	return result
+}
+
+func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
+	normalizedDS, err := normalizeDataSet(dataSet)
+	if err != nil {
+		return err
+	}
+
+	ctx = withDataSet(ctx, normalizedDS)
+	results := make([]Result, 0, len(rules))
+
+	for field, fieldRules := range rules {
+		fieldValue, err := normalizedDS.FieldValue(field)
+		if err != nil {
+			return err
+		}
+		aliasFieldName := normalizedDS.FieldAliasName(field)
+
+		result := NewResult()
+		fieldRules = normalizeRules(fieldRules)
+
+		for _, validatorRule := range fieldRules {
+			if _, ok := validatorRule.(Required); !ok {
+				if fieldValue == nil {
+					// if value is not required and is nil
+					continue
+				}
+			}
+
+			if err := validatorRule.ValidateValue(ctx, fieldValue); err != nil {
+				var errRes Result
+				if errors.As(err, &errRes) {
+					for _, rErr := range errRes.Errors() {
+						if aliasFieldName != "" {
+							valuePath := make([]string, 0, len(rErr.ValuePath)+1)
+							valuePath = append(valuePath, aliasFieldName)
+							valuePath = append(valuePath, rErr.ValuePath...)
+							rErr.ValuePath = valuePath
+						}
+						result = result.WithError(rErr)
+					}
+				} else {
+					return err
+				}
+			}
+		}
+
+		results = append(results, result)
+	}
+
+	summaryResult := NewResult()
+	for i := range results {
+		errs := (&results[i]).Errors()
+		for _, err := range errs {
+			err.Message = DefaultTranslator.Translate(ctx, err.Message, err.Params)
+			summaryResult = summaryResult.WithError(err)
+			//summaryResult = summaryResult.WithError(
+			//	NewValidationError(DefaultTranslator.Translate(ctx, err.Message, err.Params)).
+			//		WithParams(err.Params).
+			//		WithValuePath(err.ValuePath),
+			//)
+		}
+	}
+
+	if !summaryResult.IsValid() {
+		return summaryResult
+	}
+
 	return nil
 }
 
-func Attribute(ctx context.Context, attribute string) string {
-	if prefix, ok := FieldPrefixFromContext(ctx); ok {
-		attribute = prefix + "." + attribute
+func normalizeDataSet(ds any) (DataSet, error) {
+	rt := reflect.TypeOf(ds)
+	if rt.Kind() == reflect.Pointer {
+		rt = rt.Elem()
 	}
 
-	return attribute
+	switch rt.Kind() {
+	case reflect.Struct:
+		if v, ok := ds.(DataSet); ok {
+			return v, nil
+		}
+
+		return set.NewDataSetStruct(ds)
+	case reflect.Map:
+		if v, ok := ds.(map[string]any); ok {
+			return set.NewDataSetMap(v), nil
+		}
+	}
+
+	return set.NewDataSetAny(ds), nil
 }
 
-func FieldPrefixOrAttribute(ctx context.Context, attribute string) string {
-	if prefix, ok := FieldPrefixFromContext(ctx); ok {
-		return prefix
+func normalizeRules(rules []Rule) []Rule {
+	if len(rules) <= 1 {
+		return rules
 	}
 
-	return attribute
+	for i := range rules {
+		if r, ok := rules[i].(Required); ok {
+			if i == 0 {
+				break
+			}
+			ret := make([]Rule, 0, len(rules))
+			ret = append(ret, r)
+			ret = append(ret, rules[:i]...)
+			ret = append(ret, rules[i:]...)
+
+			return ret
+		}
+	}
+
+	return rules
 }
