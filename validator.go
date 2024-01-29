@@ -57,7 +57,7 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 }
 
 func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
-	normalizedDS, err := normalizeDataSet(dataSet)
+	normalizedDS, err := normalizeDataSet(dataSet) // 2 allocs
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 	results := make([]Result, 0, len(rules))
 
 	for field, fieldRules := range rules {
-		fieldValue, err := normalizedDS.FieldValue(field)
+		fieldValue, err := normalizedDS.FieldValue(field) // 2 allocs
 		if err != nil {
 			return err
 		}
