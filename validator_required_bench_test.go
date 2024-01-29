@@ -3,16 +3,17 @@ package validator
 import (
 	"context"
 	"testing"
-
-	"github.com/raoptimus/validator.go/rule"
 )
 
+// BenchmarkValidatorRequired-10    	 6303788	       175.8 ns/op	      80 B/op	       4 allocs/op
+// BenchmarkValidatorRequired-10         17474499          338.6 ns/op       184 B/op          7 allocs/op
 func BenchmarkValidatorRequired(b *testing.B) {
 	ctx := context.Background()
 	dto := &testObject{Name: "test"}
-	rules := map[string][]RuleValidator{
+
+	rules := RuleSet{
 		"Name": {
-			rule.NewRequired().WithMessage("Required"),
+			NewRequired().WithMessage("Required"),
 		},
 	}
 
@@ -20,7 +21,7 @@ func BenchmarkValidatorRequired(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		err := Validate(ctx, dto, rules, false)
+		err := Validate(ctx, dto, rules)
 		if err != nil {
 			b.Error(err)
 		}

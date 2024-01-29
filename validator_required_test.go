@@ -1,13 +1,12 @@
 package validator
 
 import (
+	"context"
 	"errors"
 	"testing"
 
+	"github.com/raoptimus/validator.go/set"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
-
-	"github.com/raoptimus/validator.go/rule"
 )
 
 type testObject struct {
@@ -26,36 +25,36 @@ type testObject4 struct {
 func TestValidatorRequired_EmptyString_ReturnsExpectedError(t *testing.T) {
 	ctx := context.Background()
 	dto := &testObject{Name: ""}
-	rules := map[string][]RuleValidator{
+	rules := RuleSet{
 		"Name": {
-			rule.NewRequired(),
+			NewRequired(),
 		},
 	}
-	err := Validate(ctx, dto, rules, false)
+	err := Validate(ctx, dto, rules)
 	assert.NotNil(t, err)
 }
 
 func TestValidatorRequired_EmptyStringWithSpace_ReturnsExpectedError(t *testing.T) {
 	ctx := context.Background()
 	dto := &testObject{Name: " "}
-	rules := map[string][]RuleValidator{
+	rules := RuleSet{
 		"Name": {
-			rule.NewRequired(),
+			NewRequired(),
 		},
 	}
-	err := Validate(ctx, dto, rules, false)
+	err := Validate(ctx, dto, rules)
 	assert.NotNil(t, err)
 }
 
 func TestValidatorRequired_NilPointerValue_ReturnsExpectedError(t *testing.T) {
 	ctx := context.Background()
 	dto := &testObject2{Name: nil}
-	rules := map[string][]RuleValidator{
+	rules := RuleSet{
 		"Name": {
-			rule.NewRequired(),
+			NewRequired(),
 		},
 	}
-	err := Validate(ctx, dto, rules, false)
+	err := Validate(ctx, dto, rules)
 	assert.NotNil(t, err)
 }
 
@@ -63,41 +62,41 @@ func TestValidatorRequired_EmptyPointerValue_ReturnsExpectedError(t *testing.T) 
 	ctx := context.Background()
 	v := ""
 	dto := &testObject2{Name: &v}
-	rules := map[string][]RuleValidator{
+	rules := RuleSet{
 		"Name": {
-			rule.NewRequired().WithMessage("Required"),
+			NewRequired().WithMessage("Required"),
 		},
 	}
-	err := Validate(ctx, dto, rules, false)
-	assert.NotNil(t, err)
-	assert.Equal(t, "Name: Required", err.Error())
-	assert.Equal(t, map[string][]string{"Name": {"Required"}}, err.(rule.ResultSet).ResultErrors())
+	err := Validate(ctx, dto, rules)
+	assert.Error(t, err)
+	assert.Equal(t, "Required", err.Error())
+	assert.Equal(t, map[string][]string{"Name": {"Required"}}, err.(Result).ErrorMessagesIndexedByPath())
 }
 
 func TestValidatorRequired_EmptyPointerValueWithJsonTag_ReturnsExpectedError(t *testing.T) {
 	ctx := context.Background()
 	v := ""
 	dto := &testObject3{Name: &v}
-	rules := map[string][]RuleValidator{
+	rules := RuleSet{
 		"Name": {
-			rule.NewRequired().WithMessage("Required"),
+			NewRequired().WithMessage("Required"),
 		},
 	}
-	err := Validate(ctx, dto, rules, false)
+	err := Validate(ctx, dto, rules)
 	assert.NotNil(t, err)
-	assert.Equal(t, "name: Required", err.Error())
-	assert.Equal(t, map[string][]string{"name": {"Required"}}, err.(rule.ResultSet).ResultErrors())
+	assert.Equal(t, "Required", err.Error())
+	assert.Equal(t, map[string][]string{"name": {"Required"}}, err.(Result).ErrorMessagesIndexedByPath())
 }
 
 func TestValidatorRequired_NotEmptyString_ReturnsExpectedNil(t *testing.T) {
 	ctx := context.Background()
 	dto := &testObject{Name: "test"}
-	rules := map[string][]RuleValidator{
+	rules := RuleSet{
 		"Name": {
-			rule.NewRequired(),
+			NewRequired(),
 		},
 	}
-	err := Validate(ctx, dto, rules, false)
+	err := Validate(ctx, dto, rules)
 	assert.Nil(t, err)
 }
 
@@ -105,49 +104,49 @@ func TestValidatorRequired_NotEmptyPointerValue_ReturnsNil(t *testing.T) {
 	ctx := context.Background()
 	v := "test"
 	dto := &testObject2{Name: &v}
-	rules := map[string][]RuleValidator{
+	rules := RuleSet{
 		"Name": {
-			rule.NewRequired(),
+			NewRequired(),
 		},
 	}
-	err := Validate(ctx, dto, rules, false)
+	err := Validate(ctx, dto, rules)
 	assert.Nil(t, err)
 }
 
-func TestValidatorRequired_NotExistProperty_ReturnsExpectedError(t *testing.T) {
+func TestValidatorRequired_NotExistField_ReturnsExpectedError(t *testing.T) {
 	ctx := context.Background()
-	dto := &testObject{Name: ""}
-	rules := map[string][]RuleValidator{
+	dto := testObject{Name: ""}
+	rules := RuleSet{
 		"NotExists": {
-			rule.NewRequired().WithMessage("Required"),
+			NewRequired().WithMessage("Required"),
 		},
 	}
-	err := Validate(ctx, dto, rules, false)
+	err := Validate(ctx, &dto, rules)
 	assert.NotNil(t, err)
-	assert.Equal(t, "undefined property: validator.testObject.NotExists", err.Error())
-	assert.Equal(t, ErrUndefinedField, errors.Unwrap(err))
+	assert.Equal(t, "undefined field: validator.testObject.NotExists", err.Error())
+	assert.Equal(t, set.BaseUndefinedFieldError, errors.Unwrap(err))
 }
 
 func TestValidatorRequired_NotEmptySlice_ReturnsExpectedNil(t *testing.T) {
 	ctx := context.Background()
 	dto := &testObject4{Names: []string{"123"}}
-	rules := map[string][]RuleValidator{
+	rules := RuleSet{
 		"Names": {
-			rule.NewRequired(),
+			NewRequired(),
 		},
 	}
-	err := Validate(ctx, dto, rules, false)
+	err := Validate(ctx, dto, rules)
 	assert.Nil(t, err)
 }
 
 func TestValidatorRequired_EmptySlice_ReturnsExpectedError(t *testing.T) {
 	ctx := context.Background()
 	dto := &testObject4{Names: nil}
-	rules := map[string][]RuleValidator{
+	rules := RuleSet{
 		"Names": {
-			rule.NewRequired(),
+			NewRequired(),
 		},
 	}
-	err := Validate(ctx, dto, rules, false)
+	err := Validate(ctx, dto, rules)
 	assert.NotNil(t, err)
 }
