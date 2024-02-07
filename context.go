@@ -3,7 +3,7 @@ package validator
 import (
 	"context"
 
-	"github.com/raoptimus/validator.go/set"
+	"github.com/raoptimus/validator.go/v2/set"
 )
 
 type Key uint8

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/raoptimus/validator.go/set"
+	"github.com/raoptimus/validator.go/v2/set"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/raoptimus/validator.go/set"
+	"github.com/raoptimus/validator.go/v2/set"
 )
 
 func ValidateValue(ctx context.Context, value any, rules ...Rule) error {

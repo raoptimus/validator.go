@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/raoptimus/validator.go/vtype"
+	"github.com/raoptimus/validator.go/v2/vtype"
 )
 
 type TimeFunc func() time.Time

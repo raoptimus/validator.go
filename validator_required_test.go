@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/raoptimus/validator.go/set"
+	"github.com/raoptimus/validator.go/v2/set"
 	"github.com/stretchr/testify/assert"
 )
 

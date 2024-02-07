@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/raoptimus/validator.go/vtype"
+	"github.com/raoptimus/validator.go/v2/vtype"
 	"github.com/stretchr/testify/assert"
 )
 

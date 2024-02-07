@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/net/idna"
 
-	"github.com/raoptimus/validator.go/regexpc"
+	"github.com/raoptimus/validator.go/v2/regexpc"
 )
 
 var regxpDomain, _ = regexpc.Compile(`://([^/]+)`)

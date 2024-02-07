@@ -3,7 +3,7 @@ package validator
 import (
 	"context"
 
-	"github.com/raoptimus/validator.go/regexpc"
+	"github.com/raoptimus/validator.go/v2/regexpc"
 )
 
 type MatchRegularExpression struct {
