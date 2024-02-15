@@ -7,7 +7,7 @@ import (
 var (
 	NotExistsDataSetIntoContextError = errors.New("not exists data set into context")
 	UnknownOperatorError             = errors.New("unknown operator")
-	UnexpectedValueTypeError         = errors.New("unexpected value type")
+	CallbackUnexpectedValueTypeError = errors.New("callback unexpected value type")
 )
 
 type ValidationError struct {

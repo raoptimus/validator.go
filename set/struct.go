@@ -37,7 +37,7 @@ func NewDataSetStruct(data any) (*DataSetStruct, error) {
 }
 
 //
-//func (ds *DataSetStruct) Map() map[string]any {
+// func (ds *DataSetStruct) Map() map[string]any {
 //	l := ds.dataType.NumField()
 //	data := make(map[string]any, l)
 //	for i := 0; i < l; i++ {
@@ -47,7 +47,7 @@ func NewDataSetStruct(data any) (*DataSetStruct, error) {
 //	}
 //
 //	return data
-//}
+// }
 
 func (ds *DataSetStruct) FieldValue(name string) (any, error) {
 	fieldValue := ds.dataStruct.FieldByName(name)
@@ -55,11 +55,8 @@ func (ds *DataSetStruct) FieldValue(name string) (any, error) {
 		return nil, NewUndefinedFieldError(ds.dataStruct.Interface(), name)
 	}
 
-	if fieldValue.Kind() == reflect.Pointer {
-		if fieldValue.IsNil() {
-			return nil, nil
-		}
-		fieldValue = fieldValue.Elem()
+	if fieldValue.Kind() == reflect.Pointer && fieldValue.IsNil() {
+		return nil, nil
 	}
 
 	return fieldValue.Interface(), nil

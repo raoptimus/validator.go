@@ -24,10 +24,14 @@ func (s Result) Error() string {
 		return s.errors[0].Message
 	}
 
-	summary := strings.Builder{}
+	var summary strings.Builder
 	for _, v := range s.errors {
-		m := strings.TrimRight(v.Message, ".")
-		summary.WriteString(m)
+		if len(v.ValuePath) > 0 {
+			summary.WriteString(strings.Join(v.ValuePath, "."))
+			summary.WriteString(": ")
+		}
+
+		summary.WriteString(strings.TrimRight(v.Message, "."))
 		summary.WriteString(". ")
 	}
 

@@ -39,6 +39,8 @@ func valueIsEmpty(value reflect.Value, allowZeroValue bool) bool {
 		if value.IsNil() {
 			return true
 		}
+
+		return valueIsEmpty(value.Elem(), allowZeroValue)
 	}
 
 	return false

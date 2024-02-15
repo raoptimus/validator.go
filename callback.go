@@ -2,7 +2,8 @@ package validator
 
 import (
 	"context"
-	"errors"
+
+	"github.com/pkg/errors"
 )
 
 type CallbackFunc[T any] func(ctx context.Context, value T) error
@@ -19,7 +20,8 @@ func NewCallback[T any](f CallbackFunc[T]) Callback[T] {
 func (c Callback[T]) ValidateValue(ctx context.Context, value any) error {
 	v, ok := value.(T)
 	if !ok {
-		return UnexpectedValueTypeError
+		var v T
+		return errors.Wrapf(CallbackUnexpectedValueTypeError, "got %T want %T", value, v)
 	}
 
 	if err := c.f(ctx, v); err != nil {
