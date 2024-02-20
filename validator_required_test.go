@@ -69,7 +69,7 @@ func TestValidatorRequired_EmptyPointerValue_ReturnsExpectedError(t *testing.T) 
 	}
 	err := Validate(ctx, dto, rules)
 	assert.Error(t, err)
-	assert.Equal(t, "Required", err.Error())
+	assert.Equal(t, "Name: Required.", err.Error())
 	assert.Equal(t, map[string][]string{"Name": {"Required"}}, err.(Result).ErrorMessagesIndexedByPath())
 }
 
@@ -84,7 +84,7 @@ func TestValidatorRequired_EmptyPointerValueWithJsonTag_ReturnsExpectedError(t *
 	}
 	err := Validate(ctx, dto, rules)
 	assert.NotNil(t, err)
-	assert.Equal(t, "Required", err.Error())
+	assert.Equal(t, "name: Required.", err.Error())
 	assert.Equal(t, map[string][]string{"name": {"Required"}}, err.(Result).ErrorMessagesIndexedByPath())
 }
 

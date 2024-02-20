@@ -44,7 +44,7 @@ func (u URL) WithEnableIDN() URL {
 }
 
 func (u URL) ValidateValue(_ context.Context, value any) error {
-	v, ok := value.(string)
+	v, ok := toString(value)
 	// make sure the length is limited to avoid DOS attacks
 	if !ok || len(v) >= 2000 {
 		return NewResult().WithError(NewValidationError(u.message))

@@ -72,7 +72,7 @@ func (t Time) ValidateValue(_ context.Context, value any) error {
 		return NewResult().WithError(NewValidationError(t.message))
 	}
 
-	vStr, okStr := v.(string)
+	vStr, okStr := toString(value)
 	vObj, okObj := v.(vtype.Time)
 	if !okStr && !okObj {
 		return NewResult().WithError(NewValidationError(t.message))

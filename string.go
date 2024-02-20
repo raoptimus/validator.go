@@ -42,7 +42,7 @@ func (s StringLength) WithTooLongMessage(message string) StringLength {
 }
 
 func (s StringLength) ValidateValue(_ context.Context, value any) error {
-	v, ok := value.(string)
+	v, ok := toString(value)
 	if !ok {
 		return NewResult().WithError(NewValidationError(s.message))
 	}
