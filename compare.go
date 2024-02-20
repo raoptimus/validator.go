@@ -128,8 +128,8 @@ func (c Compare) eq(a, b any) bool {
 		}
 	}
 
-	if ia, ok := a.(string); ok {
-		if ib, ok := b.(string); ok {
+	if ia, ok := toString(a); ok {
+		if ib, ok := toString(b); ok {
 			return ia == ib
 		}
 	}
@@ -168,8 +168,8 @@ func (c Compare) gt(a, b any) bool {
 		}
 	}
 
-	if ia, ok := a.(string); ok {
-		if ib, ok := b.(string); ok {
+	if ia, ok := toString(a); ok {
+		if ib, ok := toString(b); ok {
 			return ia > ib
 		}
 	}

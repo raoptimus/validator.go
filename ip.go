@@ -24,7 +24,7 @@ func NewIP() IP {
 }
 
 func (s IP) ValidateValue(_ context.Context, value any) error {
-	v, ok := value.(string)
+	v, ok := toString(value)
 	if !ok {
 		return NewResult().WithError(NewValidationError(s.message))
 	}

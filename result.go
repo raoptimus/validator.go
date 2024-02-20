@@ -20,10 +20,6 @@ func (s Result) WithError(errs ...*ValidationError) Result {
 }
 
 func (s Result) Error() string {
-	if len(s.errors) == 1 {
-		return s.errors[0].Message
-	}
-
 	var summary strings.Builder
 	for _, v := range s.errors {
 		if len(v.ValuePath) > 0 {

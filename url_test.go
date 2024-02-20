@@ -69,5 +69,5 @@ func TestUrlValidateValue_InvalidValue_ReturnsExpectedErrorMessage(t *testing.T)
 	ctx := context.Background()
 	err := NewURL().WithMessage("test error").ValidateValue(ctx, "http://")
 	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "test error")
+	assert.Equal(t, "test error.", err.Error())
 }

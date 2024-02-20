@@ -20,7 +20,7 @@ func TestNumber_ValidateValue_ValueNotNumberCustomError(t *testing.T) {
 		WithNotNumberMessage("test").
 		ValidateValue(ctx, "abc")
 	assert.Error(t, err)
-	assert.Equal(t, "test", err.Error())
+	assert.Equal(t, "test.", err.Error())
 }
 
 func TestNumber_ValidateValue_ValueLessThanMin(t *testing.T) {
@@ -35,7 +35,7 @@ func TestNumber_ValidateValue_ValueLessThanMinCustomError(t *testing.T) {
 	err := NewNumber(1, 10).WithTooSmallMessage("test {min}").
 		ValidateValue(ctx, 0)
 	assert.Error(t, err)
-	assert.Equal(t, "test {min}", err.Error())
+	assert.Equal(t, "test {min}.", err.Error())
 }
 
 func TestNumber_ValidateValue_ValueGreatThanMax(t *testing.T) {
@@ -51,7 +51,7 @@ func TestNumber_ValidateValue_ValueGreatThanMaxCustomError(t *testing.T) {
 		WithTooBigMessage("test {max}").
 		ValidateValue(ctx, 11)
 	assert.Error(t, err)
-	assert.Equal(t, "test {max}", err.Error())
+	assert.Equal(t, "test {max}.", err.Error())
 }
 
 func TestNumber_ValidateValue_ErrTypeOfResultSet(t *testing.T) {
