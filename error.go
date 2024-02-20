@@ -38,7 +38,7 @@ func (v *ValidationError) WithValuePath(valuePath []string) *ValidationError {
 	return v
 }
 
-// ErrorMessagesIndexedByPath - проверяет на ошибку валидации и возвращает аттрибуты, где ключ равняется полю, а значения ошибкам валидации.
+// IsError - проверяет на ошибку валидации и возвращает аттрибуты, где ключ равняется полю, а значения ошибкам валидации.
 //
 //	{
 //		"client_id": [
@@ -46,8 +46,8 @@ func (v *ValidationError) WithValuePath(valuePath []string) *ValidationError {
 //			"Value is invalid."
 //		]
 //	}
-func ErrorMessagesIndexedByPath(err error) (map[string][]string, bool) {
-	var result *Result
+func IsError(err error) (map[string][]string, bool) {
+	var result Result
 	if errors.As(err, &result) {
 		return result.ErrorMessagesIndexedByPath(), true
 	}
