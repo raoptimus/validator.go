@@ -50,6 +50,9 @@ func TestNested_ValidateValue(t *testing.T) {
 	err := Validate(ctx, &obj, rules)
 	assert.Error(t, err)
 
+	var result Result
+	assert.ErrorAs(t, err, &result)
+
 	expectedError := Result{errors: []*ValidationError{
 		{
 			Message:   "Value must be no less than 2.",
@@ -62,7 +65,8 @@ func TestNested_ValidateValue(t *testing.T) {
 			ValuePath: []string{"each", "1"},
 		},
 	}}
-	assert.Equal(t, expectedError, err)
+
+	assert.Equal(t, expectedError, result)
 
 	errorMessages := err.(Result).ErrorMessagesIndexedByPath()
 	expectedMessages := map[string][]string{

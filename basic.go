@@ -47,15 +47,16 @@ func valueIsEmpty(value reflect.Value, allowZeroValue bool) bool {
 }
 
 func toString(v any) (string, bool) {
-	str, ok := v.(string)
-	if !ok {
-		i, ok := v.(fmt.Stringer)
-		if !ok {
-			return "", false
-		}
-
-		str = i.String()
+	switch v := v.(type) {
+	case string:
+		return v, true
+	case *string:
+		return *v, true
 	}
 
-	return str, true
+	if i, ok := v.(fmt.Stringer); ok {
+		return i.String(), true
+	}
+
+	return "", false
 }
