@@ -13,6 +13,15 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 		return nil
 	}
 
+	if value == nil {
+		requiredRule, ok := hasRequiredRule(rules)
+		if !ok {
+			return nil
+		}
+
+		return requiredRule.ValidateValue(ctx, value)
+	}
+
 	dataSet, err := normalizeDataSet(value)
 	if err != nil {
 		return err
@@ -25,23 +34,16 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 	rules = normalizeRules(rules)
 	result := NewResult()
 
-	for _, validatorRule := range rules {
-		if _, ok := validatorRule.(Required); !ok {
-			if value == nil {
-				// if value is not required and is nil
-				continue
-			}
-		}
-
-		if err := validatorRule.ValidateValue(ctx, value); err != nil {
+	for _, r := range rules {
+		if err := r.ValidateValue(ctx, value); err != nil {
 			var errRes Result
 			if errors.As(err, &errRes) {
-				for _, rErr := range errRes.Errors() {
-					result = result.WithError(rErr)
-				}
-			} else {
-				return err
+				result = result.WithError(errRes.Errors()...)
+
+				continue
 			}
+
+			return err
 		}
 	}
 
@@ -110,11 +112,11 @@ func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 		for _, err := range errs {
 			err.Message = DefaultTranslator.Translate(ctx, err.Message, err.Params)
 			summaryResult = summaryResult.WithError(err)
-			//summaryResult = summaryResult.WithError(
+			// summaryResult = summaryResult.WithError(
 			//	NewValidationError(DefaultTranslator.Translate(ctx, err.Message, err.Params)).
 			//		WithParams(err.Params).
 			//		WithValuePath(err.ValuePath),
-			//)
+			// )
 		}
 	}
 
@@ -126,6 +128,10 @@ func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 }
 
 func normalizeDataSet(ds any) (DataSet, error) {
+	if ds == nil {
+		return set.NewDataSetAny(ds), nil
+	}
+
 	rt := reflect.TypeOf(ds)
 	if rt.Kind() == reflect.Pointer {
 		rt = rt.Elem()

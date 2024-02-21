@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValidate_Int_Successfully(t *testing.T) {
+func TestValidateValue_Int_Successfully(t *testing.T) {
 	ctx := context.Background()
 	rules := []Rule{
 		NewRequired(),
@@ -18,7 +18,7 @@ func TestValidate_Int_Successfully(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestValidate_Int_Failure(t *testing.T) {
+func TestValidateValue_Int_Failure(t *testing.T) {
 	ctx := context.Background()
 	rules := []Rule{
 		NewRequired(),
@@ -39,6 +39,16 @@ func TestValidate_Int_Failure(t *testing.T) {
 	assert.Equal(t, expectedResult, err)
 }
 
+func TestValidateValue_IntNilPtrValue_Successfully(t *testing.T) {
+	ctx := context.Background()
+	rules := []Rule{
+		NewNumber(1, 3),
+	}
+
+	err := ValidateValue(ctx, nil, rules...)
+	assert.NoError(t, err)
+}
+
 func TestValidate_Map_Successfully(t *testing.T) {
 	ctx := context.Background()
 	rules := RuleSet{
@@ -53,4 +63,17 @@ func TestValidate_Map_Successfully(t *testing.T) {
 
 	err := Validate(ctx, data, rules)
 	assert.NoError(t, err)
+}
+
+func TestValidate_Nil_Failure(t *testing.T) {
+	ctx := context.Background()
+	rules := RuleSet{
+		"count": {
+			NewRequired(),
+			NewNumber(1, 3),
+		},
+	}
+
+	err := Validate(ctx, nil, rules)
+	assert.Error(t, err)
 }
