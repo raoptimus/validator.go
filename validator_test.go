@@ -49,6 +49,18 @@ func TestValidateValue_IntNilPtrValue_Successfully(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestValidateValue_IntPtrValue_Successfully(t *testing.T) {
+	ctx := context.Background()
+	rules := []Rule{
+		NewNumber(1, 3),
+	}
+
+	v := 2
+
+	err := ValidateValue(ctx, &v, rules...)
+	assert.NoError(t, err)
+}
+
 func TestValidate_Map_Successfully(t *testing.T) {
 	ctx := context.Background()
 	rules := RuleSet{
