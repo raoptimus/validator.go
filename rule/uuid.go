@@ -17,6 +17,7 @@ type UUID struct {
 	message               string
 	invalidVersionMessage string
 	version               UUIDVersion
+	skipOnEmpty           bool
 }
 
 func NewUUID() UUID {
@@ -24,6 +25,11 @@ func NewUUID() UUID {
 		message:               "Invalid UUID format.",
 		invalidVersionMessage: "UUID version must be equal to {version}.",
 	}
+}
+
+func (s UUID) SkipOnEmpty() UUID {
+	s.skipOnEmpty = true
+	return s
 }
 
 func (s UUID) WithMessage(message string) UUID {
@@ -45,6 +51,10 @@ func (s UUID) ValidateValue(value any) error {
 	v, ok := toString(value)
 	if !ok {
 		return NewResult().WithError(formatMessage(s.message))
+	}
+
+	if v == "" && s.skipOnEmpty {
+		return nil
 	}
 
 	parsedUUID, err := uuid.FromString(v)
