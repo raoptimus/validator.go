@@ -14,6 +14,8 @@ type StringLength struct {
 	// string user-defined error message used when the length of the value is greater than {see max}.
 	tooLongMessage string
 	min, max       int
+	whenFunc       WhenFunc
+	skipEmpty      bool
 }
 
 func NewStringLength(min, max int) StringLength {
@@ -28,17 +30,40 @@ func NewStringLength(min, max int) StringLength {
 
 func (s StringLength) WithMessage(message string) StringLength {
 	s.message = message
+
 	return s
 }
 
 func (s StringLength) WithTooShortMessage(message string) StringLength {
 	s.tooShortMessage = message
+
 	return s
 }
 
 func (s StringLength) WithTooLongMessage(message string) StringLength {
 	s.tooLongMessage = message
+
 	return s
+}
+
+func (s StringLength) When(v WhenFunc) StringLength {
+	s.whenFunc = v
+
+	return s
+}
+
+func (s StringLength) when() WhenFunc {
+	return s.whenFunc
+}
+
+func (s StringLength) SkipOnEmpty(v bool) StringLength {
+	s.skipEmpty = v
+
+	return s
+}
+
+func (s StringLength) skipOnEmpty() bool {
+	return s.skipEmpty
 }
 
 func (s StringLength) ValidateValue(_ context.Context, value any) error {

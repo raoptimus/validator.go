@@ -10,7 +10,7 @@ import (
 	"github.com/raoptimus/validator.go/v2/regexpc"
 )
 
-var regxpDomain, _ = regexpc.Compile(`://([^/]+)`)
+var regexpDomain, _ = regexpc.Compile(`://([^/]+)`)
 
 const AllowAnyURLSchema = "*"
 
@@ -18,6 +18,8 @@ type URL struct {
 	validSchemes []string
 	enableIDN    bool
 	message      string
+	whenFunc     WhenFunc
+	skipEmpty    bool
 }
 
 func NewURL() URL {
@@ -30,16 +32,35 @@ func NewURL() URL {
 
 func (u URL) WithValidScheme(scheme ...string) URL {
 	u.validSchemes = scheme
+
 	return u
 }
 
 func (u URL) WithMessage(message string) URL {
 	u.message = message
+
 	return u
 }
 
 func (u URL) WithEnableIDN() URL {
 	u.enableIDN = true
+
+	return u
+}
+
+func (u URL) When(v WhenFunc) URL {
+	u.whenFunc = v
+
+	return u
+}
+
+func (u URL) when() WhenFunc {
+	return u.whenFunc
+}
+
+func (u URL) SkipOnEmpty(v bool) URL {
+	u.skipEmpty = v
+
 	return u
 }
 
@@ -85,8 +106,8 @@ func (u URL) convertIDN(value string) string {
 		return u.idnToASCII(value)
 	}
 
-	return regxpDomain.ReplaceAllStringFunc(value, func(m string) string {
-		p := regxpDomain.FindStringSubmatch(m)
+	return regexpDomain.ReplaceAllStringFunc(value, func(m string) string {
+		p := regexpDomain.FindStringSubmatch(m)
 		return "://" + u.idnToASCII(p[1])
 	})
 }

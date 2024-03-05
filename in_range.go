@@ -6,6 +6,8 @@ type InRange struct {
 	message     string
 	rangeValues []any
 	not         bool
+	whenFunc    WhenFunc
+	skipEmpty   bool
 }
 
 func NewInRange(rangeValues []any) InRange {
@@ -16,13 +18,35 @@ func NewInRange(rangeValues []any) InRange {
 	}
 }
 
+func (r InRange) When(v WhenFunc) InRange {
+	r.whenFunc = v
+
+	return r
+}
+
+func (r InRange) when() WhenFunc {
+	return r.whenFunc
+}
+
+func (r InRange) SkipOnEmpty(v bool) InRange {
+	r.skipEmpty = v
+
+	return r
+}
+
+func (r InRange) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
 func (r InRange) WithMessage(message string) InRange {
 	r.message = message
+
 	return r
 }
 
 func (r InRange) Not() InRange {
 	r.not = true
+
 	return r
 }
 

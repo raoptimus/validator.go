@@ -6,7 +6,9 @@ import (
 )
 
 type UniqueValues struct {
-	message string
+	message   string
+	whenFunc  WhenFunc
+	skipEmpty bool
 }
 
 func NewUniqueValues() UniqueValues {
@@ -17,7 +19,28 @@ func NewUniqueValues() UniqueValues {
 
 func (r UniqueValues) WithMessage(message string) UniqueValues {
 	r.message = message
+
 	return r
+}
+
+func (r UniqueValues) When(v WhenFunc) UniqueValues {
+	r.whenFunc = v
+
+	return r
+}
+
+func (r UniqueValues) when() WhenFunc {
+	return r.whenFunc
+}
+
+func (r UniqueValues) SkipOnEmpty(v bool) UniqueValues {
+	r.skipEmpty = v
+
+	return r
+}
+
+func (r UniqueValues) skipOnEmpty() bool {
+	return r.skipEmpty
 }
 
 func (r UniqueValues) ValidateValue(_ context.Context, value any) error {

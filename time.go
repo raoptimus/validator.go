@@ -17,6 +17,8 @@ type Time struct {
 	format          string
 	min             TimeFunc
 	max             TimeFunc
+	whenFunc        WhenFunc
+	skipEmpty       bool
 }
 
 func NewTime() Time {
@@ -33,37 +35,64 @@ func NewTime() Time {
 
 func (t Time) WithMessage(message string) Time {
 	t.message = message
+
 	return t
 }
 
 func (t Time) WithFormatMessage(message string) Time {
 	t.formatMessage = message
+
 	return t
 }
 
 func (t Time) WithTooSmallMessage(message string) Time {
 	t.tooSmallMessage = message
+
 	return t
 }
 
 func (t Time) WithTooBigMessage(message string) Time {
 	t.tooBigMessage = message
+
 	return t
 }
 
 func (t Time) WithFormat(format string) Time {
 	t.format = format
+
 	return t
 }
 
 func (t Time) WithMin(min TimeFunc) Time {
 	t.min = min
+
 	return t
 }
 
 func (t Time) WithMax(max TimeFunc) Time {
 	t.max = max
+
 	return t
+}
+
+func (t Time) When(v WhenFunc) Time {
+	t.whenFunc = v
+
+	return t
+}
+
+func (t Time) when() WhenFunc {
+	return t.whenFunc
+}
+
+func (t Time) SkipOnEmpty(v bool) Time {
+	t.skipEmpty = v
+
+	return t
+}
+
+func (t Time) skipOnEmpty() bool {
+	return t.skipEmpty
 }
 
 func (t Time) ValidateValue(_ context.Context, value any) error {

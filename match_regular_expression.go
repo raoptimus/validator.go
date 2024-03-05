@@ -7,8 +7,10 @@ import (
 )
 
 type MatchRegularExpression struct {
-	message string
-	pattern string
+	message   string
+	pattern   string
+	whenFunc  WhenFunc
+	skipEmpty bool
 }
 
 func NewMatchRegularExpression(pattern string) MatchRegularExpression {
@@ -20,7 +22,28 @@ func NewMatchRegularExpression(pattern string) MatchRegularExpression {
 
 func (s MatchRegularExpression) WithMessage(message string) MatchRegularExpression {
 	s.message = message
+
 	return s
+}
+
+func (s MatchRegularExpression) When(v WhenFunc) MatchRegularExpression {
+	s.whenFunc = v
+
+	return s
+}
+
+func (s MatchRegularExpression) when() WhenFunc {
+	return s.whenFunc
+}
+
+func (s MatchRegularExpression) SkipOnEmpty(v bool) MatchRegularExpression {
+	s.skipEmpty = v
+
+	return s
+}
+
+func (s MatchRegularExpression) skipOnEmpty() bool {
+	return s.skipEmpty
 }
 
 func (s MatchRegularExpression) ValidateValue(_ context.Context, value any) error {
@@ -37,5 +60,6 @@ func (s MatchRegularExpression) ValidateValue(_ context.Context, value any) erro
 	if !r.MatchString(v) {
 		return NewResult().WithError(NewValidationError(s.message))
 	}
+
 	return nil
 }

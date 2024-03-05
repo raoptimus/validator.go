@@ -20,6 +20,8 @@ type Nested struct {
 	normalizeRulesEnabled bool
 	rules                 RuleSet
 	message               string
+	whenFunc              WhenFunc
+	skipEmpty             bool
 }
 
 func NewNested(rules RuleSet) Nested {
@@ -32,7 +34,28 @@ func NewNested(rules RuleSet) Nested {
 
 func (n Nested) WithMessage(message string) Nested {
 	n.message = message
+
 	return n
+}
+
+func (n Nested) When(v WhenFunc) Nested {
+	n.whenFunc = v
+
+	return n
+}
+
+func (n Nested) when() WhenFunc {
+	return n.whenFunc
+}
+
+func (n Nested) SkipOnEmpty(v bool) Nested {
+	n.skipEmpty = v
+
+	return n
+}
+
+func (n Nested) skipOnEmpty() bool {
+	return n.skipEmpty
 }
 
 func (n Nested) notNormalizeRules() Nested {
@@ -41,7 +64,6 @@ func (n Nested) notNormalizeRules() Nested {
 	return n
 }
 
-// ValidateValue todo: make me
 func (n Nested) ValidateValue(ctx context.Context, value any) error {
 	if n.normalizeRulesEnabled {
 		n.normalizeRulesEnabled = false // once

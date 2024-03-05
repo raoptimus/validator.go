@@ -8,6 +8,7 @@ import (
 type Required struct {
 	message        string
 	allowZeroValue bool
+	whenFunc       WhenFunc
 }
 
 func NewRequired() Required {
@@ -17,20 +18,31 @@ func NewRequired() Required {
 	}
 }
 
+func (r Required) When(v WhenFunc) Required {
+	r.whenFunc = v
+
+	return r
+}
+
+func (r Required) when() WhenFunc {
+	return r.whenFunc
+}
+
 func (s Required) WithMessage(message string) Required {
 	s.message = message
 	return s
 }
 
-func (s Required) WithAllowZeroValue() Required {
-	s.allowZeroValue = true
-	return s
+func (r Required) WithAllowZeroValue() Required {
+	r.allowZeroValue = true
+
+	return r
 }
 
-func (s Required) ValidateValue(_ context.Context, value any) error {
+func (r Required) ValidateValue(_ context.Context, value any) error {
 	v := reflect.ValueOf(value)
-	if valueIsEmpty(v, s.allowZeroValue) {
-		return NewResult().WithError(NewValidationError(s.message))
+	if valueIsEmpty(v, r.allowZeroValue) {
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
 	return nil

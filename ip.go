@@ -11,6 +11,8 @@ type IP struct {
 	ipv6NotAllowedMessage string
 	allowV4               bool
 	allowV6               bool
+	whenFunc              WhenFunc
+	skipEmpty             bool
 }
 
 func NewIP() IP {
@@ -21,6 +23,32 @@ func NewIP() IP {
 		allowV4:               true,
 		allowV6:               true,
 	}
+}
+
+func (s IP) When(v WhenFunc) IP {
+	s.whenFunc = v
+
+	return s
+}
+
+func (s IP) when() WhenFunc {
+	return s.whenFunc
+}
+
+func (s IP) SkipOnEmpty(v bool) IP {
+	s.skipEmpty = v
+
+	return s
+}
+
+func (s IP) skipOnEmpty() bool {
+	return s.skipEmpty
+}
+
+func (s IP) WithMessage(v string) IP {
+	s.message = v
+
+	return s
 }
 
 func (s IP) ValidateValue(_ context.Context, value any) error {

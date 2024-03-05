@@ -11,6 +11,8 @@ type Compare struct {
 	operator        string
 	message         string
 	operatorIsValid bool
+	whenFunc        WhenFunc
+	skipEmpty       bool
 }
 
 func NewCompare(targetValue any, targetAttribute, operator string) Compare {
@@ -37,7 +39,28 @@ func NewCompare(targetValue any, targetAttribute, operator string) Compare {
 	default:
 		c.operatorIsValid = false
 	}
+
 	return c
+}
+
+func (c Compare) When(v WhenFunc) Compare {
+	c.whenFunc = v
+
+	return c
+}
+
+func (c Compare) when() WhenFunc {
+	return c.whenFunc
+}
+
+func (c Compare) SkipOnEmpty(v bool) Compare {
+	c.skipEmpty = v
+
+	return c
+}
+
+func (c Compare) skipOnEmpty() bool {
+	return c.skipEmpty
 }
 
 func (c Compare) ValidateValue(ctx context.Context, value any) error {

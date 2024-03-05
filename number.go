@@ -10,6 +10,8 @@ type Number struct {
 	notNumberMessage string
 	tooBigMessage    string
 	tooSmallMessage  string
+	whenFunc         WhenFunc
+	skipEmpty        bool
 }
 
 func NewNumber(min, max int64) Number {
@@ -35,6 +37,26 @@ func (n Number) WithTooSmallMessage(message string) Number {
 func (n Number) WithNotNumberMessage(message string) Number {
 	n.notNumberMessage = message
 	return n
+}
+
+func (n Number) When(v WhenFunc) Number {
+	n.whenFunc = v
+
+	return n
+}
+
+func (n Number) when() WhenFunc {
+	return n.whenFunc
+}
+
+func (n Number) SkipOnEmpty(v bool) Number {
+	n.skipEmpty = v
+
+	return n
+}
+
+func (n Number) skipOnEmpty() bool {
+	return n.skipEmpty
 }
 
 func (n Number) ValidateValue(_ context.Context, value any) error {

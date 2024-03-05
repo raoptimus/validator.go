@@ -78,6 +78,9 @@ func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 		fieldRules = normalizeRules(fieldRules)
 
 		for _, validatorRule := range fieldRules {
+			if isSkipValidate(ctx, fieldValue, validatorRule) {
+				continue
+			}
 			if _, ok := validatorRule.(Required); !ok {
 				if fieldValue == nil {
 					// if value is not required and is nil
@@ -173,4 +176,18 @@ func normalizeRules(rules []Rule) []Rule {
 	}
 
 	return rules
+}
+
+func isSkipValidate(ctx context.Context, value any, r Rule) bool {
+	if rse, ok := r.(RuleSkipEmpty); ok {
+		if rse.skipOnEmpty() && valueIsEmpty(reflect.ValueOf(value), false) {
+			return true
+		}
+	}
+
+	if rw, ok := r.(RuleWhen); ok {
+		return rw.when() != nil && !rw.when()(ctx, value)
+	}
+
+	return false
 }
