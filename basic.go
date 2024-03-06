@@ -61,12 +61,12 @@ func toString(v any) (string, bool) {
 	return "", false
 }
 
-func hasRequiredRule(rules []Rule) (Required, bool) {
+func hasRequiredRule(rules []Rule) (*Required, bool) {
 	for _, r := range rules {
-		if v, ok := r.(Required); ok {
+		if v, ok := r.(*Required); ok {
 			return v, ok
 		}
 	}
 
-	return Required{}, false
+	return nil, false
 }

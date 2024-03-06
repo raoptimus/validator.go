@@ -24,53 +24,65 @@ type Nested struct {
 	skipEmpty             bool
 }
 
-func NewNested(rules RuleSet) Nested {
-	return Nested{
+func NewNested(rules RuleSet) *Nested {
+	return &Nested{
 		normalizeRulesEnabled: true,
 		rules:                 rules,
 		message:               "",
 	}
 }
 
-func (n Nested) WithMessage(message string) Nested {
-	n.message = message
+func (r *Nested) WithMessage(message string) *Nested {
+	rc := *r
+	rc.message = message
 
-	return n
+	return &rc
 }
 
-func (n Nested) When(v WhenFunc) Nested {
-	n.whenFunc = v
+func (r *Nested) When(v WhenFunc) *Nested {
+	rc := *r
+	rc.whenFunc = v
 
-	return n
+	return &rc
 }
 
-func (n Nested) when() WhenFunc {
-	return n.whenFunc
+func (r *Nested) when() WhenFunc {
+	return r.whenFunc
 }
 
-func (n Nested) SkipOnEmpty(v bool) Nested {
-	n.skipEmpty = v
-
-	return n
+func (r *Nested) setWhen(v WhenFunc) {
+	r.whenFunc = v
 }
 
-func (n Nested) skipOnEmpty() bool {
-	return n.skipEmpty
+func (r *Nested) SkipOnEmpty(v bool) *Nested {
+	rc := *r
+	rc.skipEmpty = v
+
+	return &rc
 }
 
-func (n Nested) notNormalizeRules() Nested {
-	n.normalizeRulesEnabled = false
-
-	return n
+func (r *Nested) skipOnEmpty() bool {
+	return r.skipEmpty
 }
 
-func (n Nested) ValidateValue(ctx context.Context, value any) error {
-	if n.normalizeRulesEnabled {
-		n.normalizeRulesEnabled = false // once
-		if rules, err := n.normalizeRules(); err != nil {
+func (r *Nested) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *Nested) notNormalizeRules() *Nested {
+	rc := *r
+	rc.normalizeRulesEnabled = false
+
+	return &rc
+}
+
+func (r *Nested) ValidateValue(ctx context.Context, value any) error {
+	if r.normalizeRulesEnabled {
+		r.normalizeRulesEnabled = false // once
+		if rules, err := r.normalizeRules(); err != nil {
 			return err
 		} else {
-			n.rules = rules
+			r.rules = rules
 		}
 	}
 
@@ -79,7 +91,7 @@ func (n Nested) ValidateValue(ctx context.Context, value any) error {
 		vt = vt.Elem()
 	}
 
-	if len(n.rules) == 0 {
+	if len(r.rules) == 0 {
 		if vt.Kind() != reflect.Struct {
 			return fmt.Errorf("nested rule without rules could be used for structs only. %s given",
 				vt.Kind().String(),
@@ -95,7 +107,7 @@ func (n Nested) ValidateValue(ctx context.Context, value any) error {
 			}
 		}
 
-		return Validate(ctx, data, n.rules)
+		return Validate(ctx, data, r.rules)
 	}
 
 	if vt.Kind() != reflect.Struct {
@@ -118,9 +130,9 @@ func (n Nested) ValidateValue(ctx context.Context, value any) error {
 	}
 
 	compoundResult := NewResult()
-	results := make([]Result, 0, len(n.rules))
+	results := make([]Result, 0, len(r.rules))
 
-	for fieldName, rules := range n.rules {
+	for fieldName, rules := range r.rules {
 		// todo: parse valuePath
 
 		validatedValue, err := data.FieldValue(fieldName)
@@ -167,8 +179,8 @@ func (n Nested) ValidateValue(ctx context.Context, value any) error {
 	return nil
 }
 
-func (n Nested) normalizeRules() (RuleSet, error) {
-	nRules := n.rules
+func (r *Nested) normalizeRules() (RuleSet, error) {
+	nRules := r.rules
 
 	for {
 		rulesMap := make(map[string]RuleSet, len(nRules))

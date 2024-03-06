@@ -27,6 +27,9 @@ test:
 		-bench=$(TEST_PATTERN) \
 		-timeout=2m
 
+lint: ## Run lint
+	golangci-lint run --timeout 5m
+
 bench:
 	@[ -d ${REPORTS_DIR} ] || mkdir -p ${REPORTS_DIR}
 	@rm -rf ${REPORTS_DIR}/*

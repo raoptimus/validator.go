@@ -8,10 +8,10 @@ import (
 
 func TestResult_Errors_Successfully(t *testing.T) {
 	res := NewResult().WithError(NewValidationError("test err"))
-	errs := res.Errors()
-	assert.Equal(t, []*ValidationError{{Message: "test err"}}, errs)
+	errors := res.Errors()
+	assert.Equal(t, []*ValidationError{{Message: "test err"}}, errors)
 
-	errs = append(errs, &ValidationError{Message: "invisible error"})
+	_ = append(errors, &ValidationError{Message: "invisible error"})
 	assert.Equal(t, []*ValidationError{{Message: "test err"}}, res.Errors())
 
 	res = res.WithError(NewValidationError("test2 err"))

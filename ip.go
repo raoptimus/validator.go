@@ -15,8 +15,8 @@ type IP struct {
 	skipEmpty             bool
 }
 
-func NewIP() IP {
-	return IP{
+func NewIP() *IP {
+	return &IP{
 		message:               "Must be a valid IP address.",
 		ipv4NotAllowedMessage: "Must not be an IPv4 address.",
 		ipv6NotAllowedMessage: "Must not be an IPv6 address.",
@@ -25,41 +25,52 @@ func NewIP() IP {
 	}
 }
 
-func (s IP) When(v WhenFunc) IP {
-	s.whenFunc = v
+func (r *IP) WithMessage(v string) *IP {
+	rc := *r
+	rc.message = v
 
-	return s
+	return &rc
 }
 
-func (s IP) when() WhenFunc {
-	return s.whenFunc
+func (r *IP) When(v WhenFunc) *IP {
+	rc := *r
+	rc.whenFunc = v
+
+	return &rc
 }
 
-func (s IP) SkipOnEmpty(v bool) IP {
-	s.skipEmpty = v
-
-	return s
+func (r *IP) when() WhenFunc {
+	return r.whenFunc
 }
 
-func (s IP) skipOnEmpty() bool {
-	return s.skipEmpty
+func (r *IP) setWhen(v WhenFunc) {
+	r.whenFunc = v
 }
 
-func (s IP) WithMessage(v string) IP {
-	s.message = v
+func (r *IP) SkipOnEmpty(v bool) *IP {
+	rc := *r
+	rc.skipEmpty = v
 
-	return s
+	return &rc
 }
 
-func (s IP) ValidateValue(_ context.Context, value any) error {
+func (r *IP) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *IP) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *IP) ValidateValue(_ context.Context, value any) error {
 	v, ok := toString(value)
 	if !ok {
-		return NewResult().WithError(NewValidationError(s.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
 	ip := net.ParseIP(v)
 	if ip == nil {
-		return NewResult().WithError(NewValidationError(s.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
 	// TODO: implement ipv4 and ipv4 validations

@@ -11,39 +11,50 @@ type UniqueValues struct {
 	skipEmpty bool
 }
 
-func NewUniqueValues() UniqueValues {
-	return UniqueValues{
+func NewUniqueValues() *UniqueValues {
+	return &UniqueValues{
 		message: "The list of values must be unique.",
 	}
 }
 
-func (r UniqueValues) WithMessage(message string) UniqueValues {
-	r.message = message
+func (r *UniqueValues) WithMessage(message string) *UniqueValues {
+	rc := *r
+	rc.message = message
 
-	return r
+	return &rc
 }
 
-func (r UniqueValues) When(v WhenFunc) UniqueValues {
-	r.whenFunc = v
+func (r *UniqueValues) When(v WhenFunc) *UniqueValues {
+	rc := *r
+	rc.whenFunc = v
 
-	return r
+	return &rc
 }
 
-func (r UniqueValues) when() WhenFunc {
+func (r *UniqueValues) when() WhenFunc {
 	return r.whenFunc
 }
 
-func (r UniqueValues) SkipOnEmpty(v bool) UniqueValues {
-	r.skipEmpty = v
-
-	return r
+func (r *UniqueValues) setWhen(v WhenFunc) {
+	r.whenFunc = v
 }
 
-func (r UniqueValues) skipOnEmpty() bool {
+func (r *UniqueValues) SkipOnEmpty(v bool) *UniqueValues {
+	rc := *r
+	rc.skipEmpty = v
+
+	return &rc
+}
+
+func (r *UniqueValues) skipOnEmpty() bool {
 	return r.skipEmpty
 }
 
-func (r UniqueValues) ValidateValue(_ context.Context, value any) error {
+func (r *UniqueValues) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {
 	if reflect.TypeOf(value).Kind() != reflect.Slice {
 		return NewResult().WithError(NewValidationError(r.message))
 	}

@@ -13,52 +13,63 @@ type MatchRegularExpression struct {
 	skipEmpty bool
 }
 
-func NewMatchRegularExpression(pattern string) MatchRegularExpression {
-	return MatchRegularExpression{
+func NewMatchRegularExpression(pattern string) *MatchRegularExpression {
+	return &MatchRegularExpression{
 		message: "Value is invalid.",
 		pattern: pattern,
 	}
 }
 
-func (s MatchRegularExpression) WithMessage(message string) MatchRegularExpression {
-	s.message = message
+func (r *MatchRegularExpression) WithMessage(message string) *MatchRegularExpression {
+	rc := *r
+	rc.message = message
 
-	return s
+	return &rc
 }
 
-func (s MatchRegularExpression) When(v WhenFunc) MatchRegularExpression {
-	s.whenFunc = v
+func (r *MatchRegularExpression) When(v WhenFunc) *MatchRegularExpression {
+	rc := *r
+	rc.whenFunc = v
 
-	return s
+	return &rc
 }
 
-func (s MatchRegularExpression) when() WhenFunc {
-	return s.whenFunc
+func (r *MatchRegularExpression) when() WhenFunc {
+	return r.whenFunc
 }
 
-func (s MatchRegularExpression) SkipOnEmpty(v bool) MatchRegularExpression {
-	s.skipEmpty = v
-
-	return s
+func (r *MatchRegularExpression) setWhen(v WhenFunc) {
+	r.whenFunc = v
 }
 
-func (s MatchRegularExpression) skipOnEmpty() bool {
-	return s.skipEmpty
+func (r *MatchRegularExpression) SkipOnEmpty(v bool) *MatchRegularExpression {
+	rc := *r
+	rc.skipEmpty = v
+
+	return &rc
 }
 
-func (s MatchRegularExpression) ValidateValue(_ context.Context, value any) error {
+func (r *MatchRegularExpression) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *MatchRegularExpression) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *MatchRegularExpression) ValidateValue(_ context.Context, value any) error {
 	v, ok := toString(value)
 	if !ok {
-		return NewResult().WithError(NewValidationError(s.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
-	r, err := regexpc.Compile(s.pattern)
+	rg, err := regexpc.Compile(r.pattern)
 	if err != nil {
 		return err
 	}
 
-	if !r.MatchString(v) {
-		return NewResult().WithError(NewValidationError(s.message))
+	if !rg.MatchString(v) {
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
 	return nil

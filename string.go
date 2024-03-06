@@ -18,8 +18,8 @@ type StringLength struct {
 	skipEmpty      bool
 }
 
-func NewStringLength(min, max int) StringLength {
-	return StringLength{
+func NewStringLength(min, max int) *StringLength {
+	return &StringLength{
 		message:         "This value must be a string.",
 		tooShortMessage: "This value should contain at least {min}.",
 		tooLongMessage:  "This value should contain at most {max}.",
@@ -28,72 +28,85 @@ func NewStringLength(min, max int) StringLength {
 	}
 }
 
-func (s StringLength) WithMessage(message string) StringLength {
-	s.message = message
+func (r *StringLength) WithMessage(message string) *StringLength {
+	rc := *r
+	rc.message = message
 
-	return s
+	return &rc
 }
 
-func (s StringLength) WithTooShortMessage(message string) StringLength {
-	s.tooShortMessage = message
+func (r *StringLength) WithTooShortMessage(message string) *StringLength {
+	rc := *r
+	rc.tooShortMessage = message
 
-	return s
+	return &rc
 }
 
-func (s StringLength) WithTooLongMessage(message string) StringLength {
-	s.tooLongMessage = message
+func (r *StringLength) WithTooLongMessage(message string) *StringLength {
+	rc := *r
+	rc.tooLongMessage = message
 
-	return s
+	return &rc
 }
 
-func (s StringLength) When(v WhenFunc) StringLength {
-	s.whenFunc = v
+func (r *StringLength) When(v WhenFunc) *StringLength {
+	rc := *r
+	rc.whenFunc = v
 
-	return s
+	return &rc
 }
 
-func (s StringLength) when() WhenFunc {
-	return s.whenFunc
+func (r *StringLength) when() WhenFunc {
+	return r.whenFunc
 }
 
-func (s StringLength) SkipOnEmpty(v bool) StringLength {
-	s.skipEmpty = v
-
-	return s
+func (r *StringLength) setWhen(v WhenFunc) {
+	r.whenFunc = v
 }
 
-func (s StringLength) skipOnEmpty() bool {
-	return s.skipEmpty
+func (r *StringLength) SkipOnEmpty(v bool) *StringLength {
+	rc := *r
+	rc.skipEmpty = v
+
+	return &rc
 }
 
-func (s StringLength) ValidateValue(_ context.Context, value any) error {
+func (r *StringLength) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *StringLength) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *StringLength) ValidateValue(_ context.Context, value any) error {
 	v, ok := toString(value)
 	if !ok {
-		return NewResult().WithError(NewValidationError(s.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
 	result := NewResult()
 	v = strings.Trim(v, " ")
 	l := utf8.RuneCountInString(v)
 
-	if l < s.min {
+	if l < r.min {
 		result = NewResult().
 			WithError(
-				NewValidationError(s.tooShortMessage).
+				NewValidationError(r.tooShortMessage).
 					WithParams(map[string]any{
-						"min": s.min,
-						"max": s.max,
+						"min": r.min,
+						"max": r.max,
 					}),
 			)
 	}
 
-	if l > s.max {
+	if l > r.max {
 		result = NewResult().
 			WithError(
-				NewValidationError(s.tooLongMessage).
+				NewValidationError(r.tooLongMessage).
 					WithParams(map[string]any{
-						"min": s.min,
-						"max": s.max,
+						"min": r.min,
+						"max": r.max,
 					}),
 			)
 	}

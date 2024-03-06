@@ -22,71 +22,88 @@ type URL struct {
 	skipEmpty    bool
 }
 
-func NewURL() URL {
-	return URL{
+func NewURL() *URL {
+	return &URL{
 		validSchemes: []string{"http", "https"},
 		enableIDN:    false,
 		message:      "This value is not a valid URL.",
 	}
 }
 
-func (u URL) WithValidScheme(scheme ...string) URL {
-	u.validSchemes = scheme
+func (r *URL) WithValidScheme(scheme ...string) *URL {
+	rc := *r
+	rc.validSchemes = scheme
 
-	return u
+	return &rc
 }
 
-func (u URL) WithMessage(message string) URL {
-	u.message = message
+func (r *URL) WithMessage(message string) *URL {
+	rc := *r
+	rc.message = message
 
-	return u
+	return &rc
 }
 
-func (u URL) WithEnableIDN() URL {
-	u.enableIDN = true
+func (r *URL) WithEnableIDN() *URL {
+	rc := *r
+	rc.enableIDN = true
 
-	return u
+	return &rc
 }
 
-func (u URL) When(v WhenFunc) URL {
-	u.whenFunc = v
+func (r *URL) When(v WhenFunc) *URL {
+	rc := *r
+	rc.whenFunc = v
 
-	return u
+	return &rc
 }
 
-func (u URL) when() WhenFunc {
-	return u.whenFunc
+func (r *URL) when() WhenFunc {
+	return r.whenFunc
 }
 
-func (u URL) SkipOnEmpty(v bool) URL {
-	u.skipEmpty = v
-
-	return u
+func (r *URL) setWhen(v WhenFunc) {
+	r.whenFunc = v
 }
 
-func (u URL) ValidateValue(_ context.Context, value any) error {
+func (r *URL) SkipOnEmpty(v bool) *URL {
+	rc := *r
+	rc.skipEmpty = v
+
+	return &rc
+}
+
+func (r *URL) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *URL) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *URL) ValidateValue(_ context.Context, value any) error {
 	v, ok := toString(value)
 	// make sure the length is limited to avoid DOS attacks
 	if !ok || len(v) >= 2000 {
-		return NewResult().WithError(NewValidationError(u.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
-	if u.enableIDN {
-		v = u.convertIDN(v)
+	if r.enableIDN {
+		v = r.convertIDN(v)
 	}
 
 	uri, err := url.Parse(v)
 	if err != nil {
-		return NewResult().WithError(NewValidationError(u.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
 	if len(uri.Scheme) == 0 || (len(uri.Host) == 0 && len(uri.Opaque) == 0) {
-		return NewResult().WithError(NewValidationError(u.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
-	if len(u.validSchemes) > 0 && u.validSchemes[0] != AllowAnyURLSchema {
+	if len(r.validSchemes) > 0 && r.validSchemes[0] != AllowAnyURLSchema {
 		isValidScheme := false
-		for _, s := range u.validSchemes {
+		for _, s := range r.validSchemes {
 			if s == uri.Scheme {
 				isValidScheme = true
 				break
@@ -94,25 +111,25 @@ func (u URL) ValidateValue(_ context.Context, value any) error {
 		}
 
 		if !isValidScheme {
-			return NewResult().WithError(NewValidationError(u.message))
+			return NewResult().WithError(NewValidationError(r.message))
 		}
 	}
 
 	return nil
 }
 
-func (u URL) convertIDN(value string) string {
+func (r *URL) convertIDN(value string) string {
 	if !strings.Contains(value, "://") {
-		return u.idnToASCII(value)
+		return r.idnToASCII(value)
 	}
 
 	return regexpDomain.ReplaceAllStringFunc(value, func(m string) string {
 		p := regexpDomain.FindStringSubmatch(m)
-		return "://" + u.idnToASCII(p[1])
+		return "://" + r.idnToASCII(p[1])
 	})
 }
 
-func (u URL) idnToASCII(idn string) string {
+func (r *URL) idnToASCII(idn string) string {
 	if d, err := idna.ToASCII(idn); err == nil {
 		return d
 	} else {

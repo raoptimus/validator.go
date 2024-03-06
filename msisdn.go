@@ -1,11 +1,9 @@
 package validator
 
-const (
-	msisdnRegexp = `^\d+$`
-)
+const msisdnRegexp = `^\d+$`
 
 type MSISDN struct {
-	MatchRegularExpression
+	*MatchRegularExpression
 }
 
 func NewMSISDN() MSISDN {

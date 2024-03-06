@@ -10,47 +10,59 @@ type InRange struct {
 	skipEmpty   bool
 }
 
-func NewInRange(rangeValues []any) InRange {
-	return InRange{
+func NewInRange(rangeValues []any) *InRange {
+	return &InRange{
 		message:     "This value is invalid",
 		rangeValues: rangeValues,
 		not:         false,
 	}
 }
 
-func (r InRange) When(v WhenFunc) InRange {
-	r.whenFunc = v
+func (r *InRange) WithMessage(message string) *InRange {
+	rc := *r
+	rc.message = message
 
-	return r
+	return &rc
 }
 
-func (r InRange) when() WhenFunc {
+func (r *InRange) Not() *InRange {
+	rc := *r
+	rc.not = true
+
+	return &rc
+}
+
+func (r *InRange) When(v WhenFunc) *InRange {
+	rc := *r
+	rc.whenFunc = v
+
+	return &rc
+}
+
+func (r *InRange) when() WhenFunc {
 	return r.whenFunc
 }
 
-func (r InRange) SkipOnEmpty(v bool) InRange {
-	r.skipEmpty = v
-
-	return r
+func (r *InRange) setWhen(v WhenFunc) {
+	r.whenFunc = v
 }
 
-func (r InRange) skipOnEmpty() bool {
+func (r *InRange) SkipOnEmpty(v bool) *InRange {
+	rc := *r
+	rc.skipEmpty = v
+
+	return &rc
+}
+
+func (r *InRange) skipOnEmpty() bool {
 	return r.skipEmpty
 }
 
-func (r InRange) WithMessage(message string) InRange {
-	r.message = message
-
-	return r
+func (r *InRange) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
 }
 
-func (r InRange) Not() InRange {
-	r.not = true
-
-	return r
-}
-
-func (r InRange) ValidateValue(_ context.Context, value any) error {
+func (r *InRange) ValidateValue(_ context.Context, value any) error {
 	v, valid := indirectValue(value)
 	if !valid {
 		return NewResult().WithError(NewValidationError(r.message))

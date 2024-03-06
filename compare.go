@@ -15,8 +15,8 @@ type Compare struct {
 	skipEmpty       bool
 }
 
-func NewCompare(targetValue any, targetAttribute, operator string) Compare {
-	c := Compare{
+func NewCompare(targetValue any, targetAttribute, operator string) *Compare {
+	c := &Compare{
 		targetValue:     targetValue,
 		targetAttribute: targetAttribute,
 		operator:        operator,
@@ -43,28 +43,45 @@ func NewCompare(targetValue any, targetAttribute, operator string) Compare {
 	return c
 }
 
-func (c Compare) When(v WhenFunc) Compare {
-	c.whenFunc = v
+func (r *Compare) WithMessage(v string) *Compare {
+	rc := *r
+	rc.message = v
 
-	return c
+	return &rc
 }
 
-func (c Compare) when() WhenFunc {
-	return c.whenFunc
+func (r *Compare) When(v WhenFunc) *Compare {
+	rc := *r
+	rc.whenFunc = v
+
+	return &rc
 }
 
-func (c Compare) SkipOnEmpty(v bool) Compare {
-	c.skipEmpty = v
-
-	return c
+func (r *Compare) when() WhenFunc {
+	return r.whenFunc
 }
 
-func (c Compare) skipOnEmpty() bool {
-	return c.skipEmpty
+func (r *Compare) setWhen(v WhenFunc) {
+	r.whenFunc = v
 }
 
-func (c Compare) ValidateValue(ctx context.Context, value any) error {
-	if !c.operatorIsValid {
+func (r *Compare) SkipOnEmpty(v bool) *Compare {
+	rc := *r
+	rc.skipEmpty = v
+
+	return &rc
+}
+
+func (r *Compare) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *Compare) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *Compare) ValidateValue(ctx context.Context, value any) error {
+	if !r.operatorIsValid {
 		return UnknownOperatorError
 	}
 
@@ -73,60 +90,60 @@ func (c Compare) ValidateValue(ctx context.Context, value any) error {
 		targetValueOrAttr any
 		err               error
 	)
-	targetValue = c.targetValue
-	targetValueOrAttr = c.targetAttribute
+	targetValue = r.targetValue
+	targetValueOrAttr = r.targetAttribute
 
-	if c.targetValue == nil {
-		dataSet, ok := extractDataSet(ctx)
+	if r.targetValue == nil {
+		dataSet, ok := ExtractDataSet[DataSet](ctx)
 		if !ok {
 			return NotExistsDataSetIntoContextError
 		}
-		targetValue, err = dataSet.FieldValue(c.targetAttribute)
+		targetValue, err = dataSet.FieldValue(r.targetAttribute)
 		if err != nil {
 			return err
 		}
 		targetValueOrAttr = targetValue
 	}
 
-	switch c.operator {
+	switch r.operator {
 	case "==":
-		if c.eq(value, targetValue) {
+		if r.eq(value, targetValue) {
 			return nil
 		}
 	case "!=":
-		if !c.eq(value, targetValue) {
+		if !r.eq(value, targetValue) {
 			return nil
 		}
 	case ">":
-		if c.gt(value, targetValue) {
+		if r.gt(value, targetValue) {
 			return nil
 		}
 	case ">=":
-		if c.eq(value, targetValue) || c.gt(value, targetValue) {
+		if r.eq(value, targetValue) || r.gt(value, targetValue) {
 			return nil
 		}
 	case "<":
-		if !c.eq(value, targetValue) && !c.gt(value, targetValue) {
+		if !r.eq(value, targetValue) && !r.gt(value, targetValue) {
 			return nil
 		}
 	case "<=":
-		if c.eq(value, targetValue) || !c.gt(value, targetValue) {
+		if r.eq(value, targetValue) || !r.gt(value, targetValue) {
 			return nil
 		}
 	}
 
 	return NewResult().
 		WithError(
-			NewValidationError(c.message).
+			NewValidationError(r.message).
 				WithParams(map[string]any{
-					"targetValue":            c.targetValue,
-					"targetAttribute":        c.targetAttribute,
+					"targetValue":            r.targetValue,
+					"targetAttribute":        r.targetAttribute,
 					"targetValueOrAttribute": targetValueOrAttr,
 				}),
 		)
 }
 
-func (c Compare) eq(a, b any) bool {
+func (r *Compare) eq(a, b any) bool {
 	if ia, ok := a.(int); ok {
 		if ib, ok := b.(int); ok {
 			return ia == ib
@@ -166,7 +183,7 @@ func (c Compare) eq(a, b any) bool {
 	return a == b
 }
 
-func (c Compare) gt(a, b any) bool {
+func (r *Compare) gt(a, b any) bool {
 	if ia, ok := a.(int); ok {
 		if ib, ok := b.(int); ok {
 			return ia > ib

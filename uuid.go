@@ -25,48 +25,65 @@ type UUID struct {
 	skipEmpty             bool
 }
 
-func NewUUID() UUID {
-	return UUID{
+func NewUUID() *UUID {
+	return &UUID{
 		message:               "Invalid UUID format.",
 		invalidVersionMessage: "UUID version must be equal to {version}.",
 	}
 }
 
-func (r UUID) WithMessage(message string) UUID {
-	r.message = message
+func (r *UUID) WithMessage(message string) *UUID {
+	rc := *r
+	rc.message = message
 
-	return r
+	return &rc
 }
 
-func (r UUID) WithInvalidVersionMessage(message string) UUID {
-	r.invalidVersionMessage = message
+func (r *UUID) WithInvalidVersionMessage(message string) *UUID {
+	rc := *r
+	rc.invalidVersionMessage = message
 
-	return r
+	return &rc
 }
 
-func (r UUID) WithVersion(version UUIDVersion) UUID {
-	r.version = version
+func (r *UUID) WithVersion(version UUIDVersion) *UUID {
+	rc := *r
+	rc.version = version
 
-	return r
+	return &rc
 }
 
-func (r UUID) When(v WhenFunc) UUID {
-	r.whenFunc = v
+func (r *UUID) When(v WhenFunc) *UUID {
+	rc := *r
+	rc.whenFunc = v
 
-	return r
+	return &rc
 }
 
-func (r UUID) when() WhenFunc {
+func (r *UUID) when() WhenFunc {
 	return r.whenFunc
 }
 
-func (r UUID) SkipOnEmpty(v bool) UUID {
-	r.skipEmpty = v
-
-	return r
+func (r *UUID) setWhen(v WhenFunc) {
+	r.whenFunc = v
 }
 
-func (r UUID) ValidateValue(_ context.Context, value any) error {
+func (r *UUID) SkipOnEmpty(v bool) *UUID {
+	rc := *r
+	rc.skipEmpty = v
+
+	return &rc
+}
+
+func (r *UUID) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *UUID) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *UUID) ValidateValue(_ context.Context, value any) error {
 	v, ok := toString(value)
 	if !ok {
 		return NewResult().WithError(NewValidationError(r.message))
