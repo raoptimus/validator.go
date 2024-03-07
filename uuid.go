@@ -23,6 +23,7 @@ type UUID struct {
 	version               UUIDVersion
 	whenFunc              WhenFunc
 	skipEmpty             bool
+	skipError             bool
 }
 
 func NewUUID() *UUID {
@@ -68,9 +69,9 @@ func (r *UUID) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *UUID) SkipOnEmpty(v bool) *UUID {
+func (r *UUID) SkipOnEmpty() *UUID {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -81,6 +82,20 @@ func (r *UUID) skipOnEmpty() bool {
 
 func (r *UUID) setSkipOnEmpty(v bool) {
 	r.skipEmpty = v
+}
+
+func (r *UUID) SkipOnError() *UUID {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *UUID) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *UUID) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *UUID) ValidateValue(_ context.Context, value any) error {

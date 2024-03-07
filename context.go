@@ -66,23 +66,31 @@ func withDataSet(ctx context.Context, ds DataSet) context.Context {
 	//return context.WithValue(ctx, KeyDataSet, ds)
 }
 
-func ExtractDataSet[T DataSet](ctx context.Context) (T, bool) {
+func ExtractDataSet[T any](ctx context.Context) (T, bool) {
 	var v T
 	if ctx == nil {
 		return v, false
 	}
 
-	ds, ok := ctx.Value(KeyDataSet).(T)
+	ds, ok := ctx.Value(KeyDataSet).(DataSet)
 	if !ok {
 		return v, false
 	}
 
-	return ds, true
+	if dst, ok := ds.(T); ok {
+		return dst, true
+	}
+
+	if dt, ok := ds.Data().(T); ok {
+		return dt, true
+	}
+
+	return v, true
 }
 
-//func withPreviousRulesErrored(ctx context.Context) context.Context {
-//	return context.WithValue(ctx, PreviousRulesErrored, true)
-//}
+func withPreviousRulesErrored(ctx context.Context) context.Context {
+	return context.WithValue(ctx, PreviousRulesErrored, true)
+}
 
 func previousRulesErrored(ctx context.Context) bool {
 	if y, ok := ctx.Value(PreviousRulesErrored).(bool); ok {

@@ -20,6 +20,7 @@ type URL struct {
 	message      string
 	whenFunc     WhenFunc
 	skipEmpty    bool
+	skipError    bool
 }
 
 func NewURL() *URL {
@@ -66,9 +67,9 @@ func (r *URL) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *URL) SkipOnEmpty(v bool) *URL {
+func (r *URL) SkipOnEmpty() *URL {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -79,6 +80,20 @@ func (r *URL) skipOnEmpty() bool {
 
 func (r *URL) setSkipOnEmpty(v bool) {
 	r.skipEmpty = v
+}
+
+func (r *URL) SkipOnError() *URL {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *URL) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *URL) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *URL) ValidateValue(_ context.Context, value any) error {

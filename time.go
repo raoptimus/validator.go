@@ -19,6 +19,7 @@ type Time struct {
 	max             TimeFunc
 	whenFunc        WhenFunc
 	skipEmpty       bool
+	skipError       bool
 }
 
 func NewTime() *Time {
@@ -97,9 +98,9 @@ func (r *Time) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *Time) SkipOnEmpty(v bool) *Time {
+func (r *Time) SkipOnEmpty() *Time {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -110,6 +111,20 @@ func (r *Time) skipOnEmpty() bool {
 
 func (r *Time) setSkipOnEmpty(v bool) {
 	r.skipEmpty = v
+}
+
+func (r *Time) SkipOnError() *Time {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *Time) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *Time) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *Time) ValidateValue(_ context.Context, value any) error {

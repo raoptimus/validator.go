@@ -13,6 +13,7 @@ type IP struct {
 	allowV6               bool
 	whenFunc              WhenFunc
 	skipEmpty             bool
+	skipError             bool
 }
 
 func NewIP() *IP {
@@ -47,9 +48,9 @@ func (r *IP) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *IP) SkipOnEmpty(v bool) *IP {
+func (r *IP) SkipOnEmpty() *IP {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -60,6 +61,20 @@ func (r *IP) skipOnEmpty() bool {
 
 func (r *IP) setSkipOnEmpty(v bool) {
 	r.skipEmpty = v
+}
+
+func (r *IP) SkipOnError() *IP {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *IP) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *IP) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *IP) ValidateValue(_ context.Context, value any) error {

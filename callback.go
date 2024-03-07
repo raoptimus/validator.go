@@ -11,6 +11,7 @@ type Callback[T any] struct {
 	f         CallbackFunc[T]
 	whenFunc  WhenFunc
 	skipEmpty bool
+	skipError bool
 }
 
 func NewCallback[T any](f CallbackFunc[T]) *Callback[T] {
@@ -34,9 +35,9 @@ func (r *Callback[T]) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *Callback[T]) SkipOnEmpty(v bool) *Callback[T] {
+func (r *Callback[T]) SkipOnEmpty() *Callback[T] {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -47,6 +48,20 @@ func (r *Callback[T]) skipOnEmpty() bool {
 
 func (r *Callback[T]) setSkipOnEmpty(v bool) {
 	r.skipEmpty = v
+}
+
+func (r *Callback[T]) SkipOnError() *Callback[T] {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *Callback[T]) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *Callback[T]) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (c *Callback[T]) ValidateValue(ctx context.Context, value any) error {

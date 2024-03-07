@@ -21,6 +21,6 @@ type RuleSkipEmpty interface {
 }
 
 type RuleSkipError interface {
-	shouldSkipOnError(ctx context.Context) bool
+	shouldSkipOnError() bool
 	setSkipOnError(v bool)
 }

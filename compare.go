@@ -13,6 +13,7 @@ type Compare struct {
 	operatorIsValid bool
 	whenFunc        WhenFunc
 	skipEmpty       bool
+	skipError       bool
 }
 
 func NewCompare(targetValue any, targetAttribute, operator string) *Compare {
@@ -65,9 +66,9 @@ func (r *Compare) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *Compare) SkipOnEmpty(v bool) *Compare {
+func (r *Compare) SkipOnEmpty() *Compare {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -78,6 +79,20 @@ func (r *Compare) skipOnEmpty() bool {
 
 func (r *Compare) setSkipOnEmpty(v bool) {
 	r.skipEmpty = v
+}
+
+func (r *Compare) SkipOnError() *Compare {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *Compare) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *Compare) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *Compare) ValidateValue(ctx context.Context, value any) error {

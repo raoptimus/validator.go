@@ -14,6 +14,7 @@ type Each struct {
 	normalizeRulesEnabled bool
 	whenFunc              WhenFunc
 	skipEmpty             bool
+	skipError             bool
 }
 
 func NewEach(rules ...Rule) *Each {
@@ -28,6 +29,13 @@ func NewEach(rules ...Rule) *Each {
 func (r *Each) WithMessage(message string) *Each {
 	rc := *r
 	rc.message = message
+
+	return &rc
+}
+
+func (r *Each) WithIncorrectInputMessage(incorrectInputMessage string) *Each {
+	rc := *r
+	rc.incorrectInputMessage = incorrectInputMessage
 
 	return &rc
 }
@@ -47,9 +55,9 @@ func (r *Each) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *Each) SkipOnEmpty(v bool) *Each {
+func (r *Each) SkipOnEmpty() *Each {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -62,11 +70,18 @@ func (r *Each) setSkipOnEmpty(v bool) {
 	r.skipEmpty = v
 }
 
-func (r *Each) WithIncorrectInputMessage(incorrectInputMessage string) *Each {
-	rc := *r
-	rc.incorrectInputMessage = incorrectInputMessage
+func (r *Each) SkipOnError() *Each {
+	rs := *r
+	rs.skipError = true
 
-	return &rc
+	return &rs
+}
+
+func (r *Each) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *Each) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *Each) ValidateValue(ctx context.Context, value any) error {
@@ -122,6 +137,10 @@ func (r *Each) normalizeRules() {
 	for i, rule := range r.rules {
 		if rse, ok := rule.(RuleSkipEmpty); ok {
 			rse.setSkipOnEmpty(r.skipEmpty)
+		}
+
+		if rser, ok := rule.(RuleSkipError); ok {
+			rser.setSkipOnError(r.skipError)
 		}
 
 		if rw, ok := rule.(RuleWhen); ok {

@@ -81,14 +81,10 @@ func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 			if isSkipValidate(ctx, fieldValue, validatorRule) {
 				continue
 			}
-			if _, ok := validatorRule.(*Required); !ok {
-				if fieldValue == nil {
-					// if value is not required and is nil
-					continue
-				}
-			}
 
 			if err := validatorRule.ValidateValue(ctx, fieldValue); err != nil {
+				ctx = withPreviousRulesErrored(ctx)
+
 				var errRes Result
 				if errors.As(err, &errRes) {
 					for _, rErr := range errRes.Errors() {
@@ -186,7 +182,7 @@ func isSkipValidate(ctx context.Context, value any, r Rule) bool {
 	}
 
 	if rser, ok := r.(RuleSkipError); ok {
-		if rser.shouldSkipOnError(ctx) && previousRulesErrored(ctx) {
+		if rser.shouldSkipOnError() && previousRulesErrored(ctx) {
 			return true
 		}
 	}

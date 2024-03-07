@@ -12,6 +12,7 @@ type Number struct {
 	tooSmallMessage  string
 	whenFunc         WhenFunc
 	skipEmpty        bool
+	skipError        bool
 }
 
 func NewNumber(min, max int64) *Number {
@@ -60,9 +61,9 @@ func (r *Number) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *Number) SkipOnEmpty(v bool) *Number {
+func (r *Number) SkipOnEmpty() *Number {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -73,6 +74,20 @@ func (r *Number) skipOnEmpty() bool {
 
 func (r *Number) setSkipOnEmpty(v bool) {
 	r.skipEmpty = v
+}
+
+func (r *Number) SkipOnError() *Number {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *Number) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *Number) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *Number) ValidateValue(_ context.Context, value any) error {

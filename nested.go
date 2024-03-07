@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	separator    = "."
-	eachShortcut = "*"
+	separator      = "."
+	NestedShortcut = "*"
 )
 
 type Nested struct {
@@ -22,6 +22,7 @@ type Nested struct {
 	message               string
 	whenFunc              WhenFunc
 	skipEmpty             bool
+	skipError             bool
 }
 
 func NewNested(rules RuleSet) *Nested {
@@ -54,9 +55,9 @@ func (r *Nested) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *Nested) SkipOnEmpty(v bool) *Nested {
+func (r *Nested) SkipOnEmpty() *Nested {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -74,6 +75,20 @@ func (r *Nested) notNormalizeRules() *Nested {
 	rc.normalizeRulesEnabled = false
 
 	return &rc
+}
+
+func (r *Nested) SkipOnError() *Nested {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *Nested) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *Nested) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *Nested) ValidateValue(ctx context.Context, value any) error {
@@ -187,8 +202,8 @@ func (r *Nested) normalizeRules() (RuleSet, error) {
 		needBreak := true
 
 		for valuePath, rules := range nRules {
-			if valuePath == eachShortcut {
-				return nil, errors.New("bare shortcut is prohibited. Use 'Each' rule instead")
+			if valuePath == NestedShortcut {
+				return nil, errors.New("bare shortcut is prohibited. Use 'Nested' rule instead")
 			}
 			if valuePath == "" {
 				continue
@@ -201,7 +216,7 @@ func (r *Nested) normalizeRules() (RuleSet, error) {
 			needBreak = false
 
 			lastValuePath := parts[len(parts)-1]
-			remainingValuePath := strings.Join(parts, eachShortcut)
+			remainingValuePath := strings.Join(parts, NestedShortcut)
 			remainingValuePath = strings.TrimRight(remainingValuePath, separator)
 			if _, ok := rulesMap[remainingValuePath]; !ok {
 				if _, ok := rulesMap[remainingValuePath]; ok {

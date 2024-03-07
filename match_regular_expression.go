@@ -11,6 +11,7 @@ type MatchRegularExpression struct {
 	pattern   string
 	whenFunc  WhenFunc
 	skipEmpty bool
+	skipError bool
 }
 
 func NewMatchRegularExpression(pattern string) *MatchRegularExpression {
@@ -42,9 +43,9 @@ func (r *MatchRegularExpression) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *MatchRegularExpression) SkipOnEmpty(v bool) *MatchRegularExpression {
+func (r *MatchRegularExpression) SkipOnEmpty() *MatchRegularExpression {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -55,6 +56,20 @@ func (r *MatchRegularExpression) skipOnEmpty() bool {
 
 func (r *MatchRegularExpression) setSkipOnEmpty(v bool) {
 	r.skipEmpty = v
+}
+
+func (r *MatchRegularExpression) SkipOnError() *MatchRegularExpression {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *MatchRegularExpression) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *MatchRegularExpression) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *MatchRegularExpression) ValidateValue(_ context.Context, value any) error {

@@ -9,6 +9,7 @@ type Required struct {
 	message        string
 	allowZeroValue bool
 	whenFunc       WhenFunc
+	skipError      bool
 }
 
 func NewRequired() *Required {
@@ -44,6 +45,20 @@ func (r *Required) WithAllowZeroValue() *Required {
 	r.allowZeroValue = true
 
 	return r
+}
+
+func (r *Required) SkipOnError() *Required {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *Required) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *Required) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *Required) ValidateValue(_ context.Context, value any) error {

@@ -16,6 +16,7 @@ type StringLength struct {
 	min, max       int
 	whenFunc       WhenFunc
 	skipEmpty      bool
+	skipError      bool
 }
 
 func NewStringLength(min, max int) *StringLength {
@@ -64,9 +65,9 @@ func (r *StringLength) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *StringLength) SkipOnEmpty(v bool) *StringLength {
+func (r *StringLength) SkipOnEmpty() *StringLength {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -77,6 +78,20 @@ func (r *StringLength) skipOnEmpty() bool {
 
 func (r *StringLength) setSkipOnEmpty(v bool) {
 	r.skipEmpty = v
+}
+
+func (r *StringLength) SkipOnError() *StringLength {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *StringLength) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *StringLength) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *StringLength) ValidateValue(_ context.Context, value any) error {

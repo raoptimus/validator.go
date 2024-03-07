@@ -9,6 +9,7 @@ type UniqueValues struct {
 	message   string
 	whenFunc  WhenFunc
 	skipEmpty bool
+	skipError bool
 }
 
 func NewUniqueValues() *UniqueValues {
@@ -39,9 +40,9 @@ func (r *UniqueValues) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *UniqueValues) SkipOnEmpty(v bool) *UniqueValues {
+func (r *UniqueValues) SkipOnEmpty() *UniqueValues {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -52,6 +53,20 @@ func (r *UniqueValues) skipOnEmpty() bool {
 
 func (r *UniqueValues) setSkipOnEmpty(v bool) {
 	r.skipEmpty = v
+}
+
+func (r *UniqueValues) SkipOnError() *UniqueValues {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *UniqueValues) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *UniqueValues) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {

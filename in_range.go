@@ -8,6 +8,7 @@ type InRange struct {
 	not         bool
 	whenFunc    WhenFunc
 	skipEmpty   bool
+	skipError   bool
 }
 
 func NewInRange(rangeValues []any) *InRange {
@@ -47,9 +48,9 @@ func (r *InRange) setWhen(v WhenFunc) {
 	r.whenFunc = v
 }
 
-func (r *InRange) SkipOnEmpty(v bool) *InRange {
+func (r *InRange) SkipOnEmpty() *InRange {
 	rc := *r
-	rc.skipEmpty = v
+	rc.skipEmpty = true
 
 	return &rc
 }
@@ -60,6 +61,20 @@ func (r *InRange) skipOnEmpty() bool {
 
 func (r *InRange) setSkipOnEmpty(v bool) {
 	r.skipEmpty = v
+}
+
+func (r *InRange) SkipOnError() *InRange {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *InRange) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *InRange) setSkipOnError(v bool) {
+	r.skipError = v
 }
 
 func (r *InRange) ValidateValue(_ context.Context, value any) error {
