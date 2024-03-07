@@ -12,43 +12,92 @@ import (
 )
 
 const (
-	separator    = "."
-	eachShortcut = "*"
+	separator      = "."
+	NestedShortcut = "*"
 )
 
 type Nested struct {
 	normalizeRulesEnabled bool
 	rules                 RuleSet
 	message               string
+	whenFunc              WhenFunc
+	skipEmpty             bool
+	skipError             bool
 }
 
-func NewNested(rules RuleSet) Nested {
-	return Nested{
+func NewNested(rules RuleSet) *Nested {
+	return &Nested{
 		normalizeRulesEnabled: true,
 		rules:                 rules,
 		message:               "",
 	}
 }
 
-func (n Nested) WithMessage(message string) Nested {
-	n.message = message
-	return n
+func (r *Nested) WithMessage(message string) *Nested {
+	rc := *r
+	rc.message = message
+
+	return &rc
 }
 
-func (n Nested) notNormalizeRules() Nested {
-	n.normalizeRulesEnabled = false
+func (r *Nested) When(v WhenFunc) *Nested {
+	rc := *r
+	rc.whenFunc = v
 
-	return n
+	return &rc
 }
 
-// ValidateValue todo: make me
-func (n Nested) ValidateValue(ctx context.Context, value any) error {
-	if n.normalizeRulesEnabled {
-		n.normalizeRulesEnabled = false // once
-		if rules, err := n.normalizeRules(); err != nil {
+func (r *Nested) when() WhenFunc {
+	return r.whenFunc
+}
+
+func (r *Nested) setWhen(v WhenFunc) {
+	r.whenFunc = v
+}
+
+func (r *Nested) SkipOnEmpty() *Nested {
+	rc := *r
+	rc.skipEmpty = true
+
+	return &rc
+}
+
+func (r *Nested) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *Nested) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *Nested) notNormalizeRules() *Nested {
+	rc := *r
+	rc.normalizeRulesEnabled = false
+
+	return &rc
+}
+
+func (r *Nested) SkipOnError() *Nested {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *Nested) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *Nested) setSkipOnError(v bool) {
+	r.skipError = v
+}
+
+func (r *Nested) ValidateValue(ctx context.Context, value any) error {
+	if r.normalizeRulesEnabled {
+		r.normalizeRulesEnabled = false // once
+		if rules, err := r.normalizeRules(); err != nil {
 			return err
 		} else {
-			n.rules = rules
+			r.rules = rules
 		}
 	}
 
@@ -57,7 +106,7 @@ func (n Nested) ValidateValue(ctx context.Context, value any) error {
 		vt = vt.Elem()
 	}
 
-	if len(n.rules) == 0 {
+	if len(r.rules) == 0 {
 		if vt.Kind() != reflect.Struct {
 			return fmt.Errorf("nested rule without rules could be used for structs only. %s given",
 				vt.Kind().String(),
@@ -73,7 +122,7 @@ func (n Nested) ValidateValue(ctx context.Context, value any) error {
 			}
 		}
 
-		return Validate(ctx, data, n.rules)
+		return Validate(ctx, data, r.rules)
 	}
 
 	if vt.Kind() != reflect.Struct {
@@ -96,9 +145,9 @@ func (n Nested) ValidateValue(ctx context.Context, value any) error {
 	}
 
 	compoundResult := NewResult()
-	results := make([]Result, 0, len(n.rules))
+	results := make([]Result, 0, len(r.rules))
 
-	for fieldName, rules := range n.rules {
+	for fieldName, rules := range r.rules {
 		// todo: parse valuePath
 
 		validatedValue, err := data.FieldValue(fieldName)
@@ -145,16 +194,16 @@ func (n Nested) ValidateValue(ctx context.Context, value any) error {
 	return nil
 }
 
-func (n Nested) normalizeRules() (RuleSet, error) {
-	nRules := n.rules
+func (r *Nested) normalizeRules() (RuleSet, error) {
+	nRules := r.rules
 
 	for {
 		rulesMap := make(map[string]RuleSet, len(nRules))
 		needBreak := true
 
 		for valuePath, rules := range nRules {
-			if valuePath == eachShortcut {
-				return nil, errors.New("bare shortcut is prohibited. Use 'Each' rule instead")
+			if valuePath == NestedShortcut {
+				return nil, errors.New("bare shortcut is prohibited. Use 'Nested' rule instead")
 			}
 			if valuePath == "" {
 				continue
@@ -167,7 +216,7 @@ func (n Nested) normalizeRules() (RuleSet, error) {
 			needBreak = false
 
 			lastValuePath := parts[len(parts)-1]
-			remainingValuePath := strings.Join(parts, eachShortcut)
+			remainingValuePath := strings.Join(parts, NestedShortcut)
 			remainingValuePath = strings.TrimRight(remainingValuePath, separator)
 			if _, ok := rulesMap[remainingValuePath]; !ok {
 				if _, ok := rulesMap[remainingValuePath]; ok {

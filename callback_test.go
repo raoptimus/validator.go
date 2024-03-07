@@ -33,13 +33,12 @@ func TestCallback_ValidateValue_Error(t *testing.T) {
 	rules := RuleSet{
 		"A": {
 			NewCallback(func(ctx context.Context, value int) error {
-				if ds, ok := extractDataSet(ctx); ok {
-					if obj, ok := ds.Data().(*TestCallback); ok {
-						if obj.B > value {
-							return errAMustGreatB
-						}
+				if obj, ok := ExtractDataSet[*TestCallback](ctx); ok {
+					if obj.B > value {
+						return errAMustGreatB
 					}
 				}
+
 				return nil
 			}),
 		},

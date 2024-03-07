@@ -27,7 +27,7 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 		return err
 	}
 
-	if extDS, ok := extractDataSet(ctx); !ok || value != extDS {
+	if extDS, ok := ExtractDataSet[DataSet](ctx); !ok || value != extDS {
 		ctx = withDataSet(ctx, dataSet)
 	}
 
@@ -78,14 +78,13 @@ func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 		fieldRules = normalizeRules(fieldRules)
 
 		for _, validatorRule := range fieldRules {
-			if _, ok := validatorRule.(Required); !ok {
-				if fieldValue == nil {
-					// if value is not required and is nil
-					continue
-				}
+			if isSkipValidate(ctx, fieldValue, validatorRule) {
+				continue
 			}
 
 			if err := validatorRule.ValidateValue(ctx, fieldValue); err != nil {
+				ctx = withPreviousRulesErrored(ctx)
+
 				var errRes Result
 				if errors.As(err, &errRes) {
 					for _, rErr := range errRes.Errors() {
@@ -159,7 +158,7 @@ func normalizeRules(rules []Rule) []Rule {
 	}
 
 	for i := range rules {
-		if r, ok := rules[i].(Required); ok {
+		if r, ok := rules[i].(*Required); ok {
 			if i == 0 {
 				break
 			}
@@ -173,4 +172,24 @@ func normalizeRules(rules []Rule) []Rule {
 	}
 
 	return rules
+}
+
+func isSkipValidate(ctx context.Context, value any, r Rule) bool {
+	if rse, ok := r.(RuleSkipEmpty); ok {
+		if rse.skipOnEmpty() && valueIsEmpty(reflect.ValueOf(value), false) {
+			return true
+		}
+	}
+
+	if rser, ok := r.(RuleSkipError); ok {
+		if rser.shouldSkipOnError() && previousRulesErrored(ctx) {
+			return true
+		}
+	}
+
+	if rw, ok := r.(RuleWhen); ok {
+		return rw.when() != nil && !rw.when()(ctx, value)
+	}
+
+	return false
 }

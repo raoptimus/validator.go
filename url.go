@@ -10,7 +10,7 @@ import (
 	"github.com/raoptimus/validator.go/v2/regexpc"
 )
 
-var regxpDomain, _ = regexpc.Compile(`://([^/]+)`)
+var regexpDomain, _ = regexpc.Compile(`://([^/]+)`)
 
 const AllowAnyURLSchema = "*"
 
@@ -18,54 +18,107 @@ type URL struct {
 	validSchemes []string
 	enableIDN    bool
 	message      string
+	whenFunc     WhenFunc
+	skipEmpty    bool
+	skipError    bool
 }
 
-func NewURL() URL {
-	return URL{
+func NewURL() *URL {
+	return &URL{
 		validSchemes: []string{"http", "https"},
 		enableIDN:    false,
 		message:      "This value is not a valid URL.",
 	}
 }
 
-func (u URL) WithValidScheme(scheme ...string) URL {
-	u.validSchemes = scheme
-	return u
+func (r *URL) WithValidScheme(scheme ...string) *URL {
+	rc := *r
+	rc.validSchemes = scheme
+
+	return &rc
 }
 
-func (u URL) WithMessage(message string) URL {
-	u.message = message
-	return u
+func (r *URL) WithMessage(message string) *URL {
+	rc := *r
+	rc.message = message
+
+	return &rc
 }
 
-func (u URL) WithEnableIDN() URL {
-	u.enableIDN = true
-	return u
+func (r *URL) WithEnableIDN() *URL {
+	rc := *r
+	rc.enableIDN = true
+
+	return &rc
 }
 
-func (u URL) ValidateValue(_ context.Context, value any) error {
+func (r *URL) When(v WhenFunc) *URL {
+	rc := *r
+	rc.whenFunc = v
+
+	return &rc
+}
+
+func (r *URL) when() WhenFunc {
+	return r.whenFunc
+}
+
+func (r *URL) setWhen(v WhenFunc) {
+	r.whenFunc = v
+}
+
+func (r *URL) SkipOnEmpty() *URL {
+	rc := *r
+	rc.skipEmpty = true
+
+	return &rc
+}
+
+func (r *URL) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *URL) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *URL) SkipOnError() *URL {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *URL) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *URL) setSkipOnError(v bool) {
+	r.skipError = v
+}
+
+func (r *URL) ValidateValue(_ context.Context, value any) error {
 	v, ok := toString(value)
 	// make sure the length is limited to avoid DOS attacks
 	if !ok || len(v) >= 2000 {
-		return NewResult().WithError(NewValidationError(u.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
-	if u.enableIDN {
-		v = u.convertIDN(v)
+	if r.enableIDN {
+		v = r.convertIDN(v)
 	}
 
 	uri, err := url.Parse(v)
 	if err != nil {
-		return NewResult().WithError(NewValidationError(u.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
 	if len(uri.Scheme) == 0 || (len(uri.Host) == 0 && len(uri.Opaque) == 0) {
-		return NewResult().WithError(NewValidationError(u.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
-	if len(u.validSchemes) > 0 && u.validSchemes[0] != AllowAnyURLSchema {
+	if len(r.validSchemes) > 0 && r.validSchemes[0] != AllowAnyURLSchema {
 		isValidScheme := false
-		for _, s := range u.validSchemes {
+		for _, s := range r.validSchemes {
 			if s == uri.Scheme {
 				isValidScheme = true
 				break
@@ -73,25 +126,25 @@ func (u URL) ValidateValue(_ context.Context, value any) error {
 		}
 
 		if !isValidScheme {
-			return NewResult().WithError(NewValidationError(u.message))
+			return NewResult().WithError(NewValidationError(r.message))
 		}
 	}
 
 	return nil
 }
 
-func (u URL) convertIDN(value string) string {
+func (r *URL) convertIDN(value string) string {
 	if !strings.Contains(value, "://") {
-		return u.idnToASCII(value)
+		return r.idnToASCII(value)
 	}
 
-	return regxpDomain.ReplaceAllStringFunc(value, func(m string) string {
-		p := regxpDomain.FindStringSubmatch(m)
-		return "://" + u.idnToASCII(p[1])
+	return regexpDomain.ReplaceAllStringFunc(value, func(m string) string {
+		p := regexpDomain.FindStringSubmatch(m)
+		return "://" + r.idnToASCII(p[1])
 	})
 }
 
-func (u URL) idnToASCII(idn string) string {
+func (r *URL) idnToASCII(idn string) string {
 	if d, err := idna.ToASCII(idn); err == nil {
 		return d
 	} else {

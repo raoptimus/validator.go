@@ -21,51 +21,104 @@ type UUID struct {
 	message               string
 	invalidVersionMessage string
 	version               UUIDVersion
+	whenFunc              WhenFunc
+	skipEmpty             bool
+	skipError             bool
 }
 
-func NewUUID() UUID {
-	return UUID{
+func NewUUID() *UUID {
+	return &UUID{
 		message:               "Invalid UUID format.",
 		invalidVersionMessage: "UUID version must be equal to {version}.",
 	}
 }
 
-func (s UUID) WithMessage(message string) UUID {
-	s.message = message
-	return s
+func (r *UUID) WithMessage(message string) *UUID {
+	rc := *r
+	rc.message = message
+
+	return &rc
 }
 
-func (s UUID) WithInvalidVersionMessage(message string) UUID {
-	s.invalidVersionMessage = message
-	return s
+func (r *UUID) WithInvalidVersionMessage(message string) *UUID {
+	rc := *r
+	rc.invalidVersionMessage = message
+
+	return &rc
 }
 
-func (s UUID) WithVersion(version UUIDVersion) UUID {
-	s.version = version
-	return s
+func (r *UUID) WithVersion(version UUIDVersion) *UUID {
+	rc := *r
+	rc.version = version
+
+	return &rc
 }
 
-func (s UUID) ValidateValue(_ context.Context, value any) error {
+func (r *UUID) When(v WhenFunc) *UUID {
+	rc := *r
+	rc.whenFunc = v
+
+	return &rc
+}
+
+func (r *UUID) when() WhenFunc {
+	return r.whenFunc
+}
+
+func (r *UUID) setWhen(v WhenFunc) {
+	r.whenFunc = v
+}
+
+func (r *UUID) SkipOnEmpty() *UUID {
+	rc := *r
+	rc.skipEmpty = true
+
+	return &rc
+}
+
+func (r *UUID) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *UUID) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *UUID) SkipOnError() *UUID {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *UUID) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *UUID) setSkipOnError(v bool) {
+	r.skipError = v
+}
+
+func (r *UUID) ValidateValue(_ context.Context, value any) error {
 	v, ok := toString(value)
 	if !ok {
-		return NewResult().WithError(NewValidationError(s.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
 	parsedUUID, err := uuid.FromString(v)
 	if err != nil {
-		return NewResult().WithError(NewValidationError(s.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
 	if parsedUUID.IsNil() {
-		return NewResult().WithError(NewValidationError(s.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
-	if s.version > 0 && byte(s.version) != parsedUUID.Version() {
+	if r.version > 0 && byte(r.version) != parsedUUID.Version() {
 		return NewResult().
 			WithError(
-				NewValidationError(s.message).
+				NewValidationError(r.message).
 					WithParams(map[string]any{
-						"version": s.version,
+						"version": r.version,
 					}),
 			)
 	}

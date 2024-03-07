@@ -17,10 +17,13 @@ type Time struct {
 	format          string
 	min             TimeFunc
 	max             TimeFunc
+	whenFunc        WhenFunc
+	skipEmpty       bool
+	skipError       bool
 }
 
-func NewTime() Time {
-	return Time{
+func NewTime() *Time {
+	return &Time{
 		message:         "Value is invalid",
 		formatMessage:   "Format of the time value must be equal {format}",
 		tooBigMessage:   "Time must be no greater than {max}.",
@@ -31,64 +34,122 @@ func NewTime() Time {
 	}
 }
 
-func (t Time) WithMessage(message string) Time {
-	t.message = message
-	return t
+func (r *Time) WithMessage(message string) *Time {
+	rc := *r
+	rc.message = message
+
+	return &rc
 }
 
-func (t Time) WithFormatMessage(message string) Time {
-	t.formatMessage = message
-	return t
+func (r *Time) WithFormatMessage(message string) *Time {
+	rc := *r
+	rc.formatMessage = message
+
+	return &rc
 }
 
-func (t Time) WithTooSmallMessage(message string) Time {
-	t.tooSmallMessage = message
-	return t
+func (r *Time) WithTooSmallMessage(message string) *Time {
+	rc := *r
+	rc.tooSmallMessage = message
+
+	return &rc
 }
 
-func (t Time) WithTooBigMessage(message string) Time {
-	t.tooBigMessage = message
-	return t
+func (r *Time) WithTooBigMessage(message string) *Time {
+	rc := *r
+	rc.tooBigMessage = message
+
+	return &rc
 }
 
-func (t Time) WithFormat(format string) Time {
-	t.format = format
-	return t
+func (r *Time) WithFormat(format string) *Time {
+	rc := *r
+	rc.format = format
+
+	return &rc
 }
 
-func (t Time) WithMin(min TimeFunc) Time {
-	t.min = min
-	return t
+func (r *Time) WithMin(min TimeFunc) *Time {
+	rc := *r
+	rc.min = min
+
+	return &rc
 }
 
-func (t Time) WithMax(max TimeFunc) Time {
-	t.max = max
-	return t
+func (r *Time) WithMax(max TimeFunc) *Time {
+	rc := *r
+	rc.max = max
+
+	return &rc
 }
 
-func (t Time) ValidateValue(_ context.Context, value any) error {
+func (r *Time) When(v WhenFunc) *Time {
+	rc := *r
+	rc.whenFunc = v
+
+	return &rc
+}
+
+func (r *Time) when() WhenFunc {
+	return r.whenFunc
+}
+
+func (r *Time) setWhen(v WhenFunc) {
+	r.whenFunc = v
+}
+
+func (r *Time) SkipOnEmpty() *Time {
+	rc := *r
+	rc.skipEmpty = true
+
+	return &rc
+}
+
+func (r *Time) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *Time) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *Time) SkipOnError() *Time {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *Time) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *Time) setSkipOnError(v bool) {
+	r.skipError = v
+}
+
+func (r *Time) ValidateValue(_ context.Context, value any) error {
 	v, valid := indirectValue(value)
 	if !valid {
-		return NewResult().WithError(NewValidationError(t.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
 	vStr, okStr := toString(value)
 	vObj, okObj := v.(vtype.Time)
 	if !okStr && !okObj {
-		return NewResult().WithError(NewValidationError(t.message))
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
 	if okObj {
 		vStr = vObj.String()
 	}
 
-	vt, err := time.Parse(t.format, vStr)
+	vt, err := time.Parse(r.format, vStr)
 	if err != nil {
 		return NewResult().WithError(
-			NewValidationError(t.formatMessage).
+			NewValidationError(r.formatMessage).
 				WithParams(
 					map[string]any{
-						"format": t.format,
+						"format": r.format,
 					},
 				),
 		)
@@ -96,11 +157,11 @@ func (t Time) ValidateValue(_ context.Context, value any) error {
 
 	result := NewResult()
 
-	if t.min != nil {
-		minTime := t.min()
+	if r.min != nil {
+		minTime := r.min()
 		if vt.Before(minTime) {
 			result = result.WithError(
-				NewValidationError(t.tooSmallMessage).
+				NewValidationError(r.tooSmallMessage).
 					WithParams(
 						map[string]any{
 							"min": minTime,
@@ -110,11 +171,11 @@ func (t Time) ValidateValue(_ context.Context, value any) error {
 		}
 	}
 
-	if t.max != nil {
-		maxTime := t.max()
+	if r.max != nil {
+		maxTime := r.max()
 		if vt.After(maxTime) {
 			result = result.WithError(
-				NewValidationError(t.tooBigMessage).
+				NewValidationError(r.tooBigMessage).
 					WithParams(
 						map[string]any{
 							"max": maxTime,

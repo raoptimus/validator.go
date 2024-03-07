@@ -2,6 +2,7 @@ package validator
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -66,12 +67,17 @@ func TestNested_ValidateValue(t *testing.T) {
 		},
 	}}
 
-	assert.Equal(t, expectedError, result)
+	if !reflect.DeepEqual(expectedError, result) {
+		assert.Equal(t, expectedError, result)
+	}
 
 	errorMessages := err.(Result).ErrorMessagesIndexedByPath()
 	expectedMessages := map[string][]string{
 		"inline.count": {"Value must be no less than 2."},
 		"each.1":       {"This value should contain at least 1."},
 	}
-	assert.Equal(t, expectedMessages, errorMessages)
+
+	if !reflect.DeepEqual(expectedMessages, errorMessages) {
+		assert.Equal(t, expectedMessages, errorMessages)
+	}
 }

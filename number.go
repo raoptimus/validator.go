@@ -10,10 +10,13 @@ type Number struct {
 	notNumberMessage string
 	tooBigMessage    string
 	tooSmallMessage  string
+	whenFunc         WhenFunc
+	skipEmpty        bool
+	skipError        bool
 }
 
-func NewNumber(min, max int64) Number {
-	return Number{
+func NewNumber(min, max int64) *Number {
+	return &Number{
 		min:              min,
 		max:              max,
 		notNumberMessage: "Value must be a number.",
@@ -22,22 +25,72 @@ func NewNumber(min, max int64) Number {
 	}
 }
 
-func (n Number) WithTooBigMessage(message string) Number {
-	n.tooBigMessage = message
-	return n
+func (r *Number) WithTooBigMessage(message string) *Number {
+	rc := *r
+	rc.tooBigMessage = message
+
+	return &rc
 }
 
-func (n Number) WithTooSmallMessage(message string) Number {
-	n.tooSmallMessage = message
-	return n
+func (r *Number) WithTooSmallMessage(message string) *Number {
+	rc := *r
+	rc.tooSmallMessage = message
+
+	return &rc
 }
 
-func (n Number) WithNotNumberMessage(message string) Number {
-	n.notNumberMessage = message
-	return n
+func (r *Number) WithNotNumberMessage(message string) *Number {
+	rc := *r
+	rc.notNumberMessage = message
+
+	return &rc
 }
 
-func (n Number) ValidateValue(_ context.Context, value any) error {
+func (r *Number) When(v WhenFunc) *Number {
+	rc := *r
+	rc.whenFunc = v
+
+	return &rc
+}
+
+func (r *Number) when() WhenFunc {
+	return r.whenFunc
+}
+
+func (r *Number) setWhen(v WhenFunc) {
+	r.whenFunc = v
+}
+
+func (r *Number) SkipOnEmpty() *Number {
+	rc := *r
+	rc.skipEmpty = true
+
+	return &rc
+}
+
+func (r *Number) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *Number) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *Number) SkipOnError() *Number {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *Number) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *Number) setSkipOnError(v bool) {
+	r.skipError = v
+}
+
+func (r *Number) ValidateValue(_ context.Context, value any) error {
 	var i int64
 
 	switch v := value.(type) {
@@ -82,27 +135,27 @@ func (n Number) ValidateValue(_ context.Context, value any) error {
 	case uint64:
 		i = int64(v)
 	default:
-		return NewResult().WithError(NewValidationError(n.notNumberMessage))
+		return NewResult().WithError(NewValidationError(r.notNumberMessage))
 	}
 
 	result := NewResult()
 
-	if i < n.min {
+	if i < r.min {
 		result = result.WithError(
-			NewValidationError(n.tooSmallMessage).
+			NewValidationError(r.tooSmallMessage).
 				WithParams(map[string]any{
-					"min": n.min,
-					"max": n.max,
+					"min": r.min,
+					"max": r.max,
 				}),
 		)
 	}
 
-	if i > n.max {
+	if i > r.max {
 		result = result.WithError(
-			NewValidationError(n.tooBigMessage).
+			NewValidationError(r.tooBigMessage).
 				WithParams(map[string]any{
-					"min": n.min,
-					"max": n.max,
+					"min": r.min,
+					"max": r.max,
 				}),
 		)
 	}

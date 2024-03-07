@@ -11,31 +11,86 @@ type Each struct {
 	message               string
 	incorrectInputMessage string
 	rules                 Rules
+	normalizeRulesEnabled bool
+	whenFunc              WhenFunc
+	skipEmpty             bool
+	skipError             bool
 }
 
-func NewEach(rules ...Rule) Each {
-	return Each{
+func NewEach(rules ...Rule) *Each {
+	return &Each{
 		message:               "Value is invalid",
 		incorrectInputMessage: "Value must be array",
 		rules:                 rules,
+		normalizeRulesEnabled: true,
 	}
 }
 
-func (e Each) WithMessage(message string) Each {
-	e.message = message
-	return e
+func (r *Each) WithMessage(message string) *Each {
+	rc := *r
+	rc.message = message
+
+	return &rc
 }
 
-func (e Each) WithIncorrectInputMessage(incorrectInputMessage string) Each {
-	e.incorrectInputMessage = incorrectInputMessage
-	return e
+func (r *Each) WithIncorrectInputMessage(incorrectInputMessage string) *Each {
+	rc := *r
+	rc.incorrectInputMessage = incorrectInputMessage
+
+	return &rc
 }
 
-func (e Each) ValidateValue(ctx context.Context, value any) error {
+func (r *Each) When(v WhenFunc) *Each {
+	rc := *r
+	rc.whenFunc = v
+
+	return &rc
+}
+
+func (r *Each) when() WhenFunc {
+	return r.whenFunc
+}
+
+func (r *Each) setWhen(v WhenFunc) {
+	r.whenFunc = v
+}
+
+func (r *Each) SkipOnEmpty() *Each {
+	rc := *r
+	rc.skipEmpty = true
+
+	return &rc
+}
+
+func (r *Each) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *Each) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *Each) SkipOnError() *Each {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *Each) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *Each) setSkipOnError(v bool) {
+	r.skipError = v
+}
+
+func (r *Each) ValidateValue(ctx context.Context, value any) error {
+	r.normalizeRules()
+
 	result := NewResult()
 	if reflect.TypeOf(value).Kind() != reflect.Slice {
 		return result.WithError(
-			NewValidationError(e.incorrectInputMessage).
+			NewValidationError(r.incorrectInputMessage).
 				WithParams(map[string]any{
 					//"attribute": "",//todo
 					"value": value,
@@ -47,7 +102,7 @@ func (e Each) ValidateValue(ctx context.Context, value any) error {
 	for i := 0; i < vs.Len(); i++ {
 		v := vs.Index(i).Interface()
 
-		if err := ValidateValue(ctx, v, e.rules...); err != nil {
+		if err := ValidateValue(ctx, v, r.rules...); err != nil {
 			var r Result
 			if errors.As(err, &r) {
 				for _, err := range r.Errors() {
@@ -61,6 +116,7 @@ func (e Each) ValidateValue(ctx context.Context, value any) error {
 
 				continue
 			}
+
 			return err
 		}
 	}
@@ -70,4 +126,27 @@ func (e Each) ValidateValue(ctx context.Context, value any) error {
 	}
 
 	return result
+}
+
+func (r *Each) normalizeRules() {
+	if !r.normalizeRulesEnabled {
+		return
+	}
+	r.normalizeRulesEnabled = false
+
+	for i, rule := range r.rules {
+		if rse, ok := rule.(RuleSkipEmpty); ok {
+			rse.setSkipOnEmpty(r.skipEmpty)
+		}
+
+		if rser, ok := rule.(RuleSkipError); ok {
+			rser.setSkipOnError(r.skipError)
+		}
+
+		if rw, ok := rule.(RuleWhen); ok {
+			rw.setWhen(r.whenFunc)
+		}
+
+		r.rules[i] = rule
+	}
 }
