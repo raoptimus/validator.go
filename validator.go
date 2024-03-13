@@ -35,6 +35,9 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 	result := NewResult()
 
 	for _, r := range rules {
+		if isSkipValidate(ctx, value, r) {
+			continue
+		}
 		if err := r.ValidateValue(ctx, value); err != nil {
 			var errRes Result
 			if errors.As(err, &errRes) {
