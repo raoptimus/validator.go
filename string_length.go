@@ -101,7 +101,7 @@ func (r *StringLength) ValidateValue(_ context.Context, value any) error {
 	}
 
 	result := NewResult()
-	v = strings.Trim(v, " ")
+	v = strings.TrimSpace(v)
 	l := utf8.RuneCountInString(v)
 
 	if l < r.min {

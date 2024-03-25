@@ -1,6 +1,6 @@
 package validator
 
-const humanRegexp = `^[А-Яа-яЁёa-zA-Z0-9 ,.-]+$`
+const humanRegexp = "^[\\p{L}\\d !?-~–—‘.,'\"«»„“’`´′″\\[\\]\\/]+$"
 
 type HumanText struct {
 	*MatchRegularExpression

@@ -20,8 +20,8 @@ func indirectValue(v any) (value any, isValid bool) {
 	return val.Interface(), true
 }
 
-func valueIsEmpty(value reflect.Value, allowZeroValue bool) bool {
-	if !value.IsValid() || (!allowZeroValue && value.IsZero()) {
+func valueIsEmpty(value reflect.Value, isDeref bool) bool {
+	if !value.IsValid() || value.IsZero() {
 		return true
 	}
 
@@ -40,7 +40,9 @@ func valueIsEmpty(value reflect.Value, allowZeroValue bool) bool {
 			return true
 		}
 
-		return valueIsEmpty(value.Elem(), allowZeroValue)
+		if isDeref {
+			return valueIsEmpty(value.Elem(), false)
+		}
 	}
 
 	return false

@@ -179,7 +179,7 @@ func normalizeRules(rules []Rule) []Rule {
 
 func isSkipValidate(ctx context.Context, value any, r Rule) bool {
 	if rse, ok := r.(RuleSkipEmpty); ok {
-		if rse.skipOnEmpty() && valueIsEmpty(reflect.ValueOf(value), false) {
+		if rse.skipOnEmpty() && valueIsEmpty(reflect.ValueOf(value), true) {
 			return true
 		}
 	}
