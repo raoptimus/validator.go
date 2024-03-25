@@ -8,12 +8,85 @@ import (
 	"github.com/raoptimus/validator.go/v2/set"
 )
 
-func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
+func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
+	normalizedDS, err := normalizeDataSet(dataSet) // 2 allocs
+	if err != nil {
+		return err
+	}
+
+	ctx = withDataSet(ctx, normalizedDS)
+	results := make([]Result, 0, len(rules))
+
+	for field, fieldRules := range rules {
+		fieldValue, err := normalizedDS.FieldValue(field) // 2 allocs
+		if err != nil {
+			return err
+		}
+		aliasFieldName := normalizedDS.FieldAliasName(field)
+
+		result := NewResult()
+		fieldRules = normalizeRules(fieldRules)
+
+		for _, validatorRule := range fieldRules {
+			if isSkipValidate(ctx, fieldValue, validatorRule) {
+				continue
+			}
+
+			if err := validatorRule.ValidateValue(ctx, fieldValue); err != nil {
+				ctx = withPreviousRulesErrored(ctx)
+
+				var errRes Result
+				if errors.As(err, &errRes) {
+					for _, rErr := range errRes.Errors() {
+						if aliasFieldName != "" {
+							valuePath := make([]string, 0, len(rErr.ValuePath)+1)
+							valuePath = append(valuePath, aliasFieldName)
+							valuePath = append(valuePath, rErr.ValuePath...)
+							rErr.ValuePath = valuePath
+						}
+						result = result.WithError(rErr)
+					}
+				} else {
+					return err
+				}
+
+				if _, ok := validatorRule.(*Required); ok {
+					break
+				}
+			}
+		}
+
+		results = append(results, result)
+	}
+
+	summaryResult := NewResult()
+	for i := range results {
+		errs := (&results[i]).Errors()
+		for _, err := range errs {
+			err.Message = DefaultTranslator.Translate(ctx, err.Message, err.Params)
+			summaryResult = summaryResult.WithError(err)
+			// summaryResult = summaryResult.WithError(
+			//	NewValidationError(DefaultTranslator.Translate(ctx, err.Message, err.Params)).
+			//		WithParams(err.Params).
+			//		WithValuePath(err.ValuePath),
+			// )
+		}
+	}
+
+	if !summaryResult.IsValid() {
+		return summaryResult
+	}
+
+	return nil
+}
+
+func validateValue(ctx context.Context, value any, rules ...Rule) error {
 	if len(rules) == 0 {
 		return nil
 	}
 
 	if value == nil {
+		// todo: should be moved to Nested validator
 		requiredRule, ok := hasRequiredRule(rules)
 		if !ok {
 			return nil
@@ -59,74 +132,6 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 	}
 
 	return result
-}
-
-func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
-	normalizedDS, err := normalizeDataSet(dataSet) // 2 allocs
-	if err != nil {
-		return err
-	}
-
-	ctx = withDataSet(ctx, normalizedDS)
-	results := make([]Result, 0, len(rules))
-
-	for field, fieldRules := range rules {
-		fieldValue, err := normalizedDS.FieldValue(field) // 2 allocs
-		if err != nil {
-			return err
-		}
-		aliasFieldName := normalizedDS.FieldAliasName(field)
-
-		result := NewResult()
-		fieldRules = normalizeRules(fieldRules)
-
-		for _, validatorRule := range fieldRules {
-			if isSkipValidate(ctx, fieldValue, validatorRule) {
-				continue
-			}
-
-			if err := validatorRule.ValidateValue(ctx, fieldValue); err != nil {
-				ctx = withPreviousRulesErrored(ctx)
-
-				var errRes Result
-				if errors.As(err, &errRes) {
-					for _, rErr := range errRes.Errors() {
-						if aliasFieldName != "" {
-							valuePath := make([]string, 0, len(rErr.ValuePath)+1)
-							valuePath = append(valuePath, aliasFieldName)
-							valuePath = append(valuePath, rErr.ValuePath...)
-							rErr.ValuePath = valuePath
-						}
-						result = result.WithError(rErr)
-					}
-				} else {
-					return err
-				}
-			}
-		}
-
-		results = append(results, result)
-	}
-
-	summaryResult := NewResult()
-	for i := range results {
-		errs := (&results[i]).Errors()
-		for _, err := range errs {
-			err.Message = DefaultTranslator.Translate(ctx, err.Message, err.Params)
-			summaryResult = summaryResult.WithError(err)
-			// summaryResult = summaryResult.WithError(
-			//	NewValidationError(DefaultTranslator.Translate(ctx, err.Message, err.Params)).
-			//		WithParams(err.Params).
-			//		WithValuePath(err.ValuePath),
-			// )
-		}
-	}
-
-	if !summaryResult.IsValid() {
-		return summaryResult
-	}
-
-	return nil
 }
 
 func normalizeDataSet(ds any) (DataSet, error) {

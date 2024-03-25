@@ -102,7 +102,7 @@ func (r *Each) ValidateValue(ctx context.Context, value any) error {
 	for i := 0; i < vs.Len(); i++ {
 		v := vs.Index(i).Interface()
 
-		if err := ValidateValue(ctx, v, r.rules...); err != nil {
+		if err := validateValue(ctx, v, r.rules...); err != nil {
 			var r Result
 			if errors.As(err, &r) {
 				for _, err := range r.Errors() {

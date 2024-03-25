@@ -156,7 +156,7 @@ func (r *Nested) ValidateValue(ctx context.Context, value any) error {
 		}
 		valuePath := data.FieldAliasName(fieldName)
 
-		if err := ValidateValue(ctx, validatedValue, rules...); err != nil {
+		if err := validateValue(ctx, validatedValue, rules...); err != nil {
 			var itemResult Result
 
 			if errors.As(err, &itemResult) {

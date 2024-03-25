@@ -14,7 +14,7 @@ func TestValidateValue_Int_Successfully(t *testing.T) {
 		NewNumber(1, 3),
 	}
 
-	err := ValidateValue(ctx, 1, rules...)
+	err := validateValue(ctx, 1, rules...)
 	assert.NoError(t, err)
 }
 
@@ -25,7 +25,7 @@ func TestValidateValue_Int_Failure(t *testing.T) {
 		NewNumber(1, 3),
 	}
 
-	err := ValidateValue(ctx, 0, rules...)
+	err := validateValue(ctx, 0, rules...)
 	assert.Error(t, err)
 	assert.Equal(t, "Value cannot be blank. Value must be no less than 1.", err.Error())
 
@@ -45,7 +45,7 @@ func TestValidateValue_IntNilPtrValue_Successfully(t *testing.T) {
 		NewNumber(1, 3),
 	}
 
-	err := ValidateValue(ctx, nil, rules...)
+	err := validateValue(ctx, nil, rules...)
 	assert.NoError(t, err)
 }
 
@@ -57,7 +57,7 @@ func TestValidateValue_IntPtrValue_Successfully(t *testing.T) {
 
 	v := 2
 
-	err := ValidateValue(ctx, &v, rules...)
+	err := validateValue(ctx, &v, rules...)
 	assert.NoError(t, err)
 }
 
