@@ -8,6 +8,60 @@ import (
 	"github.com/raoptimus/validator.go/v2/set"
 )
 
+func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
+	if len(rules) == 0 {
+		return nil
+	}
+
+	if value == nil {
+		// todo: should be moved to Nested validator
+		requiredRule, ok := hasRequiredRule(rules)
+		if !ok {
+			return nil
+		}
+
+		return requiredRule.ValidateValue(ctx, value)
+	}
+
+	dataSet, err := normalizeDataSet(value)
+	if err != nil {
+		return err
+	}
+
+	if extDS, ok := ExtractDataSet[DataSet](ctx); !ok || value != extDS {
+		ctx = withDataSet(ctx, dataSet)
+	}
+
+	rules = normalizeRules(rules)
+	result := NewResult()
+
+	for _, r := range rules {
+		if isSkipValidate(ctx, value, r) {
+			continue
+		}
+		if err := r.ValidateValue(ctx, value); err != nil {
+			var errRes Result
+			if errors.As(err, &errRes) {
+				result = result.WithError(errRes.Errors()...)
+
+				continue
+			}
+
+			return err
+		}
+	}
+
+	if result.IsValid() {
+		return nil
+	}
+
+	for _, err := range result.Errors() {
+		err.Message = DefaultTranslator.Translate(ctx, err.Message, err.Params)
+	}
+
+	return result
+}
+
 func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 	normalizedDS, err := normalizeDataSet(dataSet) // 2 allocs
 	if err != nil {
@@ -78,60 +132,6 @@ func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 	}
 
 	return nil
-}
-
-func validateValue(ctx context.Context, value any, rules ...Rule) error {
-	if len(rules) == 0 {
-		return nil
-	}
-
-	if value == nil {
-		// todo: should be moved to Nested validator
-		requiredRule, ok := hasRequiredRule(rules)
-		if !ok {
-			return nil
-		}
-
-		return requiredRule.ValidateValue(ctx, value)
-	}
-
-	dataSet, err := normalizeDataSet(value)
-	if err != nil {
-		return err
-	}
-
-	if extDS, ok := ExtractDataSet[DataSet](ctx); !ok || value != extDS {
-		ctx = withDataSet(ctx, dataSet)
-	}
-
-	rules = normalizeRules(rules)
-	result := NewResult()
-
-	for _, r := range rules {
-		if isSkipValidate(ctx, value, r) {
-			continue
-		}
-		if err := r.ValidateValue(ctx, value); err != nil {
-			var errRes Result
-			if errors.As(err, &errRes) {
-				result = result.WithError(errRes.Errors()...)
-
-				continue
-			}
-
-			return err
-		}
-	}
-
-	if result.IsValid() {
-		return nil
-	}
-
-	for _, err := range result.Errors() {
-		err.Message = DefaultTranslator.Translate(ctx, err.Message, err.Params)
-	}
-
-	return result
 }
 
 func normalizeDataSet(ds any) (DataSet, error) {
