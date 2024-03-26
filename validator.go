@@ -13,14 +13,6 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 		return nil
 	}
 
-	if value == nil {
-		// todo: should be moved to Nested validator
-		requiredRule, ok := hasRequiredRule(rules)
-		if ok {
-			return requiredRule.ValidateValue(ctx, value)
-		}
-	}
-
 	dataSet, err := normalizeDataSet(value)
 	if err != nil {
 		return err
@@ -37,6 +29,7 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 		if isSkipValidate(ctx, value, r) {
 			continue
 		}
+
 		if err := r.ValidateValue(ctx, value); err != nil {
 			var errRes Result
 			if errors.As(err, &errRes) {
@@ -45,6 +38,7 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 				continue
 			}
 
+			// why? only if rule is required
 			return err
 		}
 	}
