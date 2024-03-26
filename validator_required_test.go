@@ -58,7 +58,7 @@ func TestValidatorRequired_NilPointerValue_ReturnsExpectedError(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestValidatorRequired_EmptyPointerValue_Successfully(t *testing.T) {
+func TestValidatorRequired_EmptyPointerValue_ReturnsExpectedError(t *testing.T) {
 	ctx := context.Background()
 	v := ""
 	dto := &testObject2{Name: &v}
@@ -68,7 +68,24 @@ func TestValidatorRequired_EmptyPointerValue_Successfully(t *testing.T) {
 		},
 	}
 	err := Validate(ctx, dto, rules)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.Equal(t, "Name: Required.", err.Error())
+	assert.Equal(t, map[string][]string{"Name": {"Required"}}, err.(Result).ErrorMessagesIndexedByPath())
+}
+
+func TestValidatorRequired_EmptyPointerValueWithJsonTag_ReturnsExpectedError(t *testing.T) {
+	ctx := context.Background()
+	v := ""
+	dto := &testObject3{Name: &v}
+	rules := RuleSet{
+		"Name": {
+			NewRequired().WithMessage("Required"),
+		},
+	}
+	err := Validate(ctx, dto, rules)
+	assert.NotNil(t, err)
+	assert.Equal(t, "name: Required.", err.Error())
+	assert.Equal(t, map[string][]string{"name": {"Required"}}, err.(Result).ErrorMessagesIndexedByPath())
 }
 
 func TestValidatorRequired_NotEmptyString_ReturnsExpectedNil(t *testing.T) {

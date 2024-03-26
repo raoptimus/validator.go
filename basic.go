@@ -20,7 +20,7 @@ func indirectValue(v any) (value any, isValid bool) {
 	return val.Interface(), true
 }
 
-func valueIsEmpty(value reflect.Value, isDeref bool) bool {
+func valueIsEmpty(value reflect.Value) bool {
 	if !value.IsValid() || value.IsZero() {
 		return true
 	}
@@ -40,15 +40,17 @@ func valueIsEmpty(value reflect.Value, isDeref bool) bool {
 			return true
 		}
 
-		if isDeref {
-			return valueIsEmpty(value.Elem(), false)
-		}
+		return valueIsEmpty(value.Elem())
 	}
 
 	return false
 }
 
 func toString(v any) (string, bool) {
+	if v == nil {
+		return "", false
+	}
+
 	switch v := v.(type) {
 	case string:
 		return v, true

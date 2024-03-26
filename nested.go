@@ -101,6 +101,12 @@ func (r *Nested) ValidateValue(ctx context.Context, value any) error {
 		}
 	}
 
+	if value == nil {
+		return NewResult().WithError(
+			NewValidationError(fmt.Sprintf("value should be a struct. %T given.", value)),
+		)
+	}
+
 	vt := reflect.TypeOf(value)
 	if vt.Kind() == reflect.Pointer {
 		vt = vt.Elem()

@@ -60,7 +60,7 @@ func (r *Required) setSkipOnError(v bool) {
 
 func (r *Required) ValidateValue(_ context.Context, value any) error {
 	v := reflect.ValueOf(value)
-	if valueIsEmpty(v, false) {
+	if valueIsEmpty(v) {
 		return NewResult().WithError(NewValidationError(r.message))
 	}
 

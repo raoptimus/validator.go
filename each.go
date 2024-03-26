@@ -88,7 +88,7 @@ func (r *Each) ValidateValue(ctx context.Context, value any) error {
 	r.normalizeRules()
 
 	result := NewResult()
-	if reflect.TypeOf(value).Kind() != reflect.Slice {
+	if value == nil || reflect.TypeOf(value).Kind() != reflect.Slice {
 		return result.WithError(
 			NewValidationError(r.incorrectInputMessage).
 				WithParams(map[string]any{

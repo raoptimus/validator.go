@@ -91,6 +91,10 @@ func (r *Number) setSkipOnError(v bool) {
 }
 
 func (r *Number) ValidateValue(_ context.Context, value any) error {
+	if value == nil {
+		return NewResult().WithError(NewValidationError(r.notNumberMessage))
+	}
+
 	var i int64
 
 	switch v := value.(type) {

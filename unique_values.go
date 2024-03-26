@@ -70,7 +70,7 @@ func (r *UniqueValues) setSkipOnError(v bool) {
 }
 
 func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {
-	if reflect.TypeOf(value).Kind() != reflect.Slice {
+	if value == nil || reflect.TypeOf(value).Kind() != reflect.Slice {
 		return NewResult().WithError(NewValidationError(r.message))
 	}
 
