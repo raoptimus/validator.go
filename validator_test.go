@@ -39,14 +39,15 @@ func TestValidateValue_Int_Failure(t *testing.T) {
 	assert.Equal(t, expectedResult, err)
 }
 
-func TestValidateValue_IntNilPtrValue_Successfully(t *testing.T) {
+func TestValidateValue_IntNilPtrValue_Failure(t *testing.T) {
 	ctx := context.Background()
 	rules := []Rule{
 		NewNumber(1, 3),
 	}
 
 	err := ValidateValue(ctx, nil, rules...)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.Equal(t, "Value must be a number.", err.Error())
 }
 
 func TestValidateValue_IntPtrValue_Successfully(t *testing.T) {

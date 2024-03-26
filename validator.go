@@ -16,11 +16,9 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 	if value == nil {
 		// todo: should be moved to Nested validator
 		requiredRule, ok := hasRequiredRule(rules)
-		if !ok {
-			return nil
+		if ok {
+			return requiredRule.ValidateValue(ctx, value)
 		}
-
-		return requiredRule.ValidateValue(ctx, value)
 	}
 
 	dataSet, err := normalizeDataSet(value)
