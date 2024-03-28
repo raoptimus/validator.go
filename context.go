@@ -85,7 +85,7 @@ func ExtractDataSet[T any](ctx context.Context) (T, bool) {
 		return dt, true
 	}
 
-	return v, true
+	return v, false
 }
 
 func withPreviousRulesErrored(ctx context.Context) context.Context {
