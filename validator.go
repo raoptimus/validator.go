@@ -13,12 +13,13 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 		return nil
 	}
 
-	dataSet, err := normalizeDataSet(value)
-	if err != nil {
-		return err
-	}
-
 	if extDS, ok := ExtractDataSet[DataSet](ctx); !ok || value != extDS {
+		ctx = withDataSet(ctx, extDS)
+	} else {
+		dataSet, err := normalizeDataSet(value)
+		if err != nil {
+			return err
+		}
 		ctx = withDataSet(ctx, dataSet)
 	}
 
