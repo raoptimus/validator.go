@@ -2,7 +2,6 @@ package validator
 
 import (
 	"context"
-	"net/url"
 	"strings"
 
 	"golang.org/x/net/idna"
@@ -13,8 +12,10 @@ import (
 var regexpDomain, _ = regexpc.Compile(`://([^/]+)`)
 
 const AllowAnyURLSchema = "*"
+const defaultURLRegexpPattern = `^{schemes}:\/\/(([a-zA-Z0-9][a-zA-Z0-9_-]*)(\.[a-zA-Z0-9][a-zA-Z0-9_-]*)+)(?::\d{1,5})?([?\/#].*$|$)`
 
 type URL struct {
+	pattern      string
 	validSchemes []string
 	enableIDN    bool
 	message      string
@@ -25,14 +26,27 @@ type URL struct {
 
 func NewURL() *URL {
 	return &URL{
+		pattern:      defaultURLRegexpPattern,
 		validSchemes: []string{"http", "https"},
 		enableIDN:    false,
 		message:      "This value is not a valid URL.",
 	}
 }
 
+func (r *URL) WithPattern(pattern string) *URL {
+	rc := *r
+	rc.pattern = pattern
+
+	return &rc
+}
+
 func (r *URL) WithValidScheme(scheme ...string) *URL {
 	rc := *r
+	for i, sh := range scheme {
+		if sh == AllowAnyURLSchema {
+			scheme[i] = ".*?"
+		}
+	}
 	rc.validSchemes = scheme
 
 	return &rc
@@ -107,27 +121,14 @@ func (r *URL) ValidateValue(_ context.Context, value any) error {
 		v = r.convertIDN(v)
 	}
 
-	uri, err := url.Parse(v)
+	pattern := r.getPattern()
+	rgxp, err := regexpc.Compile(pattern)
 	if err != nil {
 		return NewResult().WithError(NewValidationError(r.message))
 	}
 
-	if len(uri.Scheme) == 0 || (len(uri.Host) == 0 && len(uri.Opaque) == 0) {
+	if !rgxp.MatchString(v) {
 		return NewResult().WithError(NewValidationError(r.message))
-	}
-
-	if len(r.validSchemes) > 0 && r.validSchemes[0] != AllowAnyURLSchema {
-		isValidScheme := false
-		for _, s := range r.validSchemes {
-			if s == uri.Scheme {
-				isValidScheme = true
-				break
-			}
-		}
-
-		if !isValidScheme {
-			return NewResult().WithError(NewValidationError(r.message))
-		}
 	}
 
 	return nil
@@ -150,4 +151,16 @@ func (r *URL) idnToASCII(idn string) string {
 	} else {
 		return idn
 	}
+}
+
+func (r *URL) getPattern() string {
+	if !strings.Contains(r.pattern, "{schemes}") {
+		return r.pattern
+	}
+
+	return strings.ReplaceAll(
+		r.pattern,
+		"{schemes}",
+		"((?i)"+strings.Join(r.validSchemes, "|")+")",
+	)
 }
