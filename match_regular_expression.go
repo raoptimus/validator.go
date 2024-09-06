@@ -21,6 +21,13 @@ func NewMatchRegularExpression(pattern string) *MatchRegularExpression {
 	}
 }
 
+func (r *MatchRegularExpression) WithPattern(pattern string) *MatchRegularExpression {
+	rc := *r
+	rc.pattern = pattern
+
+	return &rc
+}
+
 func (r *MatchRegularExpression) WithMessage(message string) *MatchRegularExpression {
 	rc := *r
 	rc.message = message
