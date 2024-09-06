@@ -2,6 +2,7 @@ package validator
 
 import (
 	"context"
+	"net/url"
 	"strings"
 
 	"golang.org/x/net/idna"
@@ -163,4 +164,105 @@ func (r *URL) getPattern() string {
 		"{schemes}",
 		"((?i)"+strings.Join(r.validSchemes, "|")+")",
 	)
+}
+
+type DeepLinkURL struct {
+	invalidSchemes []string
+	message        string
+	whenFunc       WhenFunc
+	skipEmpty      bool
+	skipError      bool
+}
+
+func NewDeepLinkURL() *DeepLinkURL {
+	return &DeepLinkURL{
+		invalidSchemes: []string{"http", "https", "ws"},
+		message:        "This value is not a valid deep link url.",
+	}
+}
+
+func (r *DeepLinkURL) WithInvalidSchemes(schemes []string) *DeepLinkURL {
+	rc := *r
+	rc.invalidSchemes = schemes
+
+	return &rc
+}
+
+func (r *DeepLinkURL) WithMessage(message string) *DeepLinkURL {
+	rc := *r
+	rc.message = message
+
+	return &rc
+}
+
+func (r *DeepLinkURL) When(v WhenFunc) *DeepLinkURL {
+	rc := *r
+	rc.whenFunc = v
+
+	return &rc
+}
+
+func (r *DeepLinkURL) when() WhenFunc {
+	return r.whenFunc
+}
+
+func (r *DeepLinkURL) setWhen(v WhenFunc) {
+	r.whenFunc = v
+}
+
+func (r *DeepLinkURL) SkipOnEmpty() *DeepLinkURL {
+	rc := *r
+	rc.skipEmpty = true
+
+	return &rc
+}
+
+func (r *DeepLinkURL) skipOnEmpty() bool {
+	return r.skipEmpty
+}
+
+func (r *DeepLinkURL) setSkipOnEmpty(v bool) {
+	r.skipEmpty = v
+}
+
+func (r *DeepLinkURL) SkipOnError() *DeepLinkURL {
+	rs := *r
+	rs.skipError = true
+
+	return &rs
+}
+
+func (r *DeepLinkURL) shouldSkipOnError() bool {
+	return r.skipError
+}
+func (r *DeepLinkURL) setSkipOnError(v bool) {
+	r.skipError = v
+}
+
+func (r *DeepLinkURL) ValidateValue(_ context.Context, value any) error {
+	v, ok := toString(value)
+	// make sure the length is limited to avoid DOS attacks
+	if !ok || len(v) >= 2000 {
+		return NewResult().WithError(NewValidationError(r.message))
+	}
+
+	uri, err := url.Parse(v)
+	if err != nil {
+		return NewResult().WithError(NewValidationError(r.message))
+	}
+
+	if len(uri.Scheme) == 0 || (len(uri.Host) == 0 && len(uri.Opaque) == 0) {
+		return NewResult().WithError(NewValidationError(r.message))
+	}
+
+	if len(r.invalidSchemes) > 0 {
+		for _, s := range r.invalidSchemes {
+			if s == uri.Scheme {
+				return NewResult().WithError(NewValidationError(r.message))
+			}
+		}
+
+	}
+
+	return nil
 }

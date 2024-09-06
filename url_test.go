@@ -101,3 +101,69 @@ func TestUrlValidateValue_InvalidValue_ReturnsExpectedErrorMessage(t *testing.T)
 	assert.Error(t, err)
 	assert.Equal(t, "test error.", err.Error())
 }
+
+func TestDeepLinkURL_ValidateValue_ValidURL_Successfully(t *testing.T) {
+	tests := []struct {
+		Name string
+		URL  string
+	}{
+		{
+			Name: "tg protocol #1",
+			URL:  "tg:resolve?domain={domain}",
+		},
+		{
+			Name: "tg protocol #2",
+			URL:  "tg://resolve?domain={domain}",
+		},
+		{
+			Name: "tg protocol #1 without query",
+			URL:  "tg:resolve",
+		},
+		{
+			Name: "tg protocol #2 without query",
+			URL:  "tg://resolve",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			ctx := context.Background()
+			r := NewDeepLinkURL()
+			err := r.ValidateValue(ctx, tt.URL)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestDeepLinkURL_ValidateValue_InvalidURL_Failure(t *testing.T) {
+	tests := []struct {
+		Name string
+		URL  string
+	}{
+		{
+			Name: "http scheme",
+			URL:  "http://example.com",
+		},
+		{
+			Name: "https scheme",
+			URL:  "https://example.com",
+		},
+		{
+			Name: "domain only",
+			URL:  "example.com",
+		},
+		{
+			Name: "invalid scheme",
+			URL:  "://example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			ctx := context.Background()
+			r := NewDeepLinkURL()
+			err := r.ValidateValue(ctx, tt.URL)
+			assert.Error(t, err)
+		})
+	}
+}
