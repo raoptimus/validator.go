@@ -21,29 +21,22 @@ func indirectValue(v any) (value any, isValid bool) {
 }
 
 func valueIsEmpty(value reflect.Value) bool {
-	if !value.IsValid() || value.IsZero() {
+	if !value.IsValid() {
 		return true
 	}
 
-	kind := value.Kind()
-	switch kind {
+	switch value.Kind() {
+	case reflect.Slice, reflect.Map:
+		return value.IsNil() || value.Len() == 0
+	case reflect.Array, reflect.Struct:
+		return value.IsZero()
 	case reflect.String:
-		if len(strings.TrimSpace(value.String())) == 0 {
-			return true
-		}
-	case reflect.Slice:
-		if value.Len() == 0 {
-			return true
-		}
+		return len(strings.TrimSpace(value.String())) == 0
 	case reflect.Ptr:
-		if value.IsNil() {
-			return true
-		}
-
-		return valueIsEmpty(value.Elem())
+		return value.IsNil() || valueIsEmpty(value.Elem())
+	default:
+		return false
 	}
-
-	return false
 }
 
 func toString(v any) (string, bool) {
