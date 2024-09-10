@@ -27,12 +27,11 @@ func TestValidateValue_Int_Failure(t *testing.T) {
 
 	err := ValidateValue(ctx, 0, rules...)
 	assert.Error(t, err)
-	assert.Equal(t, "Value cannot be blank. Value must be no less than 1.", err.Error())
+	assert.Equal(t, "Value must be no less than 1.", err.Error())
 
 	assert.ErrorAs(t, err, &Result{})
 	expectedResult := NewResult().
 		WithError(
-			NewValidationError("Value cannot be blank."),
 			NewValidationError("Value must be no less than 1.").
 				WithParams(map[string]any{"min": int64(1), "max": int64(3)}),
 		)
