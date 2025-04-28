@@ -61,6 +61,7 @@ func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 		return err
 	}
 
+	ctx = contextWithRootDataSet(ctx, dataSet)
 	ctx = withDataSet(ctx, normalizedDS)
 	results := make([]Result, 0, len(rules))
 
