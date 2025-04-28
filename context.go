@@ -10,7 +10,10 @@ type Key uint8
 
 const (
 	KeyDataSet Key = iota + 1
-	PreviousRulesErrored
+	KeyPreviousRulesErrored
+	KeyRootDataSet
+	KeyNestedDataSet
+	KeyPrevNestedDataSet
 )
 
 type DataSet interface {
@@ -89,12 +92,39 @@ func ExtractDataSet[T any](ctx context.Context) (T, bool) {
 }
 
 func withPreviousRulesErrored(ctx context.Context) context.Context {
-	return context.WithValue(ctx, PreviousRulesErrored, true)
+	return context.WithValue(ctx, KeyPreviousRulesErrored, true)
 }
 
 func previousRulesErrored(ctx context.Context) bool {
-	if y, ok := ctx.Value(PreviousRulesErrored).(bool); ok {
+	if y, ok := ctx.Value(KeyPreviousRulesErrored).(bool); ok {
 		return y
 	}
 	return false
+}
+
+func contextWithRootDataSet(ctx context.Context, ds any) context.Context {
+	if prev := ctx.Value(KeyRootDataSet); prev != nil {
+		ctx = context.WithValue(ctx, KeyPrevNestedDataSet, prev)
+	}
+
+	return context.WithValue(ctx, KeyRootDataSet, ds)
+}
+
+func RootDataSetFromContext[T any](ctx context.Context) (T, bool) {
+	v, ok := ctx.Value(KeyRootDataSet).(T)
+	return v, ok
+}
+
+func contextWithNestedDataSet(ctx context.Context, ds any) context.Context {
+	return context.WithValue(ctx, KeyNestedDataSet, ds)
+}
+
+func NestedDataSetFromContext[T any](ctx context.Context) (T, bool) {
+	v, ok := ctx.Value(KeyNestedDataSet).(T)
+	return v, ok
+}
+
+func PrevNestedDataSetFromContext[T any](ctx context.Context) (T, bool) {
+	v, ok := ctx.Value(KeyPrevNestedDataSet).(T)
+	return v, ok
 }

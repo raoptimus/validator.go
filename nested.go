@@ -141,6 +141,8 @@ func (r *Nested) ValidateValue(ctx context.Context, value any) error {
 		)
 	}
 
+	ctx = contextWithNestedDataSet(ctx, value)
+
 	var err error
 	data, ok := value.(*set.DataSetStruct)
 	if !ok {
