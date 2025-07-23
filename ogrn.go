@@ -26,7 +26,7 @@ func NewOGRN() *OGRN {
 	return &OGRN{
 		ogrnMessage:              "This value is not a valid OGRN.",
 		ogrnipMessage:            "This value is not a valid OGRNIP.",
-		invalidOGRNLengthMessage: "This value should contain 13 or 15 characters.",
+		invalidOGRNLengthMessage: "This value should contain either 13 or 15 characters.",
 	}
 }
 
@@ -119,7 +119,10 @@ func (o *OGRN) validateOGRN(ogrn string) error {
 		return NewResult().WithError(NewValidationError(o.ogrnMessage))
 	}
 
-	num, _ := strconv.ParseInt(ogrn[:12], 10, 64)
+	num, err := strconv.ParseInt(ogrn[:12], 10, 64)
+	if err != nil {
+		return NewResult().WithError(NewValidationError(o.ogrnMessage))
+	}
 
 	remainder := num % 11
 	controlDigit := int(remainder % 10)
@@ -129,7 +132,10 @@ func (o *OGRN) validateOGRN(ogrn string) error {
 		controlDigit = 0
 	}
 
-	lastDigit, _ := strconv.Atoi(ogrn[12:])
+	lastDigit, err := strconv.Atoi(ogrn[12:])
+	if err != nil {
+		return NewResult().WithError(NewValidationError(o.ogrnMessage))
+	}
 
 	if controlDigit != lastDigit {
 		return NewResult().WithError(NewValidationError(o.ogrnMessage))
@@ -143,12 +149,18 @@ func (o *OGRN) validateOGRNIP(ogrnip string) error {
 		return NewResult().WithError(NewValidationError(o.ogrnipMessage))
 	}
 
-	num, _ := strconv.ParseInt(ogrnip[:14], 10, 64)
+	num, err := strconv.ParseInt(ogrnip[:14], 10, 64)
+	if err != nil {
+		return NewResult().WithError(NewValidationError(o.ogrnipMessage))
+	}
 
 	remainder := num % 13
 	controlDigit := int(remainder % 10)
 
-	lastDigit, _ := strconv.Atoi(ogrnip[14:])
+	lastDigit, err := strconv.Atoi(ogrnip[14:])
+	if err != nil {
+		return NewResult().WithError(NewValidationError(o.ogrnipMessage))
+	}
 
 	if controlDigit != lastDigit {
 		return NewResult().WithError(NewValidationError(o.ogrnipMessage))
