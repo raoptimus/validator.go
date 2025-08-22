@@ -35,6 +35,12 @@ func valueIsEmpty(value reflect.Value) bool {
 	case reflect.Ptr:
 		return value.IsNil() || valueIsEmpty(value.Elem())
 	default:
+		if value.CanInterface() {
+			if i, ok := value.Interface().(fmt.Stringer); ok {
+				return len(strings.TrimSpace(i.String())) == 0
+			}
+		}
+
 		return false
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/raoptimus/validator.go/v2/vtype"
 )
 
-type TimeFunc func() time.Time
+type TimeFunc func(ctx context.Context) (time.Time, error)
 
 type Time struct {
 	message         string
@@ -127,7 +127,7 @@ func (r *Time) setSkipOnError(v bool) {
 	r.skipError = v
 }
 
-func (r *Time) ValidateValue(_ context.Context, value any) error {
+func (r *Time) ValidateValue(ctx context.Context, value any) error {
 	v, valid := indirectValue(value)
 	if !valid {
 		return NewResult().WithError(NewValidationError(r.message))
@@ -158,7 +158,10 @@ func (r *Time) ValidateValue(_ context.Context, value any) error {
 	result := NewResult()
 
 	if r.min != nil {
-		minTime := r.min()
+		minTime, err := r.min(ctx)
+		if err != nil {
+			return err
+		}
 		if vt.Before(minTime) {
 			result = result.WithError(
 				NewValidationError(r.tooSmallMessage).
@@ -172,7 +175,10 @@ func (r *Time) ValidateValue(_ context.Context, value any) error {
 	}
 
 	if r.max != nil {
-		maxTime := r.max()
+		maxTime, err := r.max(ctx)
+		if err != nil {
+			return err
+		}
 		if vt.After(maxTime) {
 			result = result.WithError(
 				NewValidationError(r.tooBigMessage).
