@@ -34,6 +34,8 @@ type (
 )
 
 func TestNested_ValidateValue(t *testing.T) {
+	t.Parallel()
+
 	rules := RuleSet{
 		"Name": {
 			NewRequired(),
@@ -97,6 +99,8 @@ func TestNested_ValidateValue(t *testing.T) {
 }
 
 func TestNested_ValidateValue_InvalidInput_Failure(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name  string
 		value any
@@ -120,7 +124,10 @@ func TestNested_ValidateValue_InvalidInput_Failure(t *testing.T) {
 	})
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			err := nested.ValidateValue(context.Background(), tt.value)
 			assert.Error(t, err)
 
@@ -131,6 +138,8 @@ func TestNested_ValidateValue_InvalidInput_Failure(t *testing.T) {
 }
 
 func TestNested_ValidateValue_BareShortcut_Failure(t *testing.T) {
+	t.Parallel()
+
 	nested := NewNested(RuleSet{
 		"*": {NewRequired()},
 	})
@@ -142,6 +151,8 @@ func TestNested_ValidateValue_BareShortcut_Failure(t *testing.T) {
 }
 
 func TestNested_ValidateValue_AllFieldsValid_Successfully(t *testing.T) {
+	t.Parallel()
+
 	nested := NewNested(RuleSet{
 		"Name": {NewRequired()},
 	})
@@ -152,6 +163,8 @@ func TestNested_ValidateValue_AllFieldsValid_Successfully(t *testing.T) {
 }
 
 func TestNested_ValidateValue_DotNotationSingleField_Failure(t *testing.T) {
+	t.Parallel()
+
 	nested := NewNested(RuleSet{
 		"Items.Name": {NewRequired()},
 	})
@@ -173,6 +186,8 @@ func TestNested_ValidateValue_DotNotationSingleField_Failure(t *testing.T) {
 }
 
 func TestNested_ValidateValue_DotNotationSiblings_Successfully(t *testing.T) {
+	t.Parallel()
+
 	// Two dot-separated paths sharing the same parent ("Items") must be
 	// merged into a single NewEach(NewNested(...)) during normalizeRules.
 	// Before the fix, strings.Join joined ALL parts (producing unique keys

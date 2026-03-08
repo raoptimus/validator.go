@@ -20,6 +20,8 @@ type testNonComparableItem struct {
 }
 
 func TestUniqueValues_ValidateValue_Successfully(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	v := func(s string) *string { return &s }
 
@@ -62,7 +64,10 @@ func TestUniqueValues_ValidateValue_Successfully(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			err := NewUniqueValues().ValidateValue(ctx, tt.value)
 			assert.NoError(t, err)
 		})
@@ -70,6 +75,8 @@ func TestUniqueValues_ValidateValue_Successfully(t *testing.T) {
 }
 
 func TestUniqueValues_ValidateValue_Failure(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	v := func(s string) *string { return &s }
 
@@ -112,7 +119,10 @@ func TestUniqueValues_ValidateValue_Failure(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			err := NewUniqueValues().ValidateValue(ctx, tt.value)
 			assert.Error(t, err)
 		})
