@@ -172,7 +172,6 @@ func (r *Nested) ValidateValue(ctx context.Context, value any) error {
 	}
 
 	compoundResult := NewResult()
-	results := make([]Result, 0, len(r.rules))
 
 	fieldNames := make([]string, 0, len(r.rules))
 	for fieldName := range r.rules {
@@ -194,7 +193,6 @@ func (r *Nested) ValidateValue(ctx context.Context, value any) error {
 			var itemResult Result
 
 			if errors.As(err, &itemResult) {
-				result := NewResult()
 				for _, itemError := range itemResult.Errors() {
 					var errorValuePath []string
 					if _, err := strconv.Atoi(valuePath); err != nil {
@@ -206,19 +204,14 @@ func (r *Nested) ValidateValue(ctx context.Context, value any) error {
 						errorValuePath = append(errorValuePath, itemError.ValuePath...)
 					}
 					itemError.ValuePath = errorValuePath
-					result = result.WithError(itemError)
+					compoundResult = compoundResult.WithError(itemError)
 				}
 
-				results = append(results, result)
 				continue
 			}
 
 			return err
 		}
-	}
-
-	for i := range results {
-		compoundResult = compoundResult.WithError(results[i].Errors()...)
 	}
 
 	if !compoundResult.IsValid() {
