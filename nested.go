@@ -43,7 +43,6 @@ func NewNested(rules RuleSet) *Nested {
 	return &Nested{
 		normalizeOnce: &sync.Once{},
 		rules:         rules,
-		message:       "",
 	}
 }
 
@@ -243,25 +242,22 @@ func (r *Nested) normalizeRules() (RuleSet, error) {
 			if valuePath == "" {
 				continue
 			}
-			parts := strings.Split(valuePath, separator)
-			if len(parts) == 1 {
+			idx := strings.LastIndex(valuePath, separator)
+			if idx < 0 {
 				continue
 			}
 
 			needBreak = false
 
-			lastValuePath := parts[len(parts)-1]
-			remainingValuePath := strings.Join(parts, NestedShortcut)
-			remainingValuePath = strings.TrimRight(remainingValuePath, separator)
+			lastValuePath := valuePath[idx+1:]
+			remainingValuePath := strings.ReplaceAll(valuePath[:idx], separator, NestedShortcut)
 			if _, ok := rulesMap[remainingValuePath]; !ok {
-				if _, ok := rulesMap[remainingValuePath]; ok {
-					rulesMap[remainingValuePath][lastValuePath] = rules
-				} else {
-					rulesMap[remainingValuePath] = RuleSet{lastValuePath: rules}
-				}
-
-				delete(nRules, valuePath)
+				rulesMap[remainingValuePath] = RuleSet{lastValuePath: rules}
+			} else {
+				rulesMap[remainingValuePath][lastValuePath] = rules
 			}
+
+			delete(nRules, valuePath)
 		}
 
 		for valuePath, nestedRules := range rulesMap {
