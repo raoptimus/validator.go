@@ -86,11 +86,10 @@ func (r *UniqueValues) setSkipOnError(v bool) {
 //     O(n²) pairwise reflect.DeepEqual — avoids allocations from string
 //     serialization and is faster for typical validation arrays (< 30 elements).
 func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {
-	if value == nil || reflect.TypeOf(value).Kind() != reflect.Slice {
+	vs := reflect.ValueOf(value)
+	if vs.Kind() != reflect.Slice {
 		return NewResult().WithError(NewValidationError(r.message))
 	}
-
-	vs := reflect.ValueOf(value)
 
 	// Determine the actual element type, dereferencing one pointer level
 	// to check comparability of the underlying struct, not the pointer.
@@ -110,13 +109,15 @@ func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {
 // Pointer elements are dereferenced so that two *T with equal fields
 // produce the same map key (the underlying value, not the address).
 func (r *UniqueValues) validateComparable(vs reflect.Value) error {
-	set := make(map[any]struct{}, vs.Len())
+	n := vs.Len()
+	isPtr := vs.Type().Elem().Kind() == reflect.Ptr
+	set := make(map[any]struct{}, n)
 
-	for i := 0; i < vs.Len(); i++ {
+	for i := 0; i < n; i++ {
 		v := vs.Index(i)
 		key := v.Interface()
 
-		if v.Kind() == reflect.Ptr && !v.IsNil() {
+		if isPtr && !v.IsNil() {
 			key = v.Elem().Interface()
 		}
 
@@ -136,13 +137,15 @@ func (r *UniqueValues) validateComparable(vs reflect.Value) error {
 // for small slices because DeepEqual short-circuits on first field mismatch
 // and allocates nothing per comparison.
 func (r *UniqueValues) validateDeepEqual(vs reflect.Value) error {
-	seen := make([]any, 0, vs.Len())
+	n := vs.Len()
+	isPtr := vs.Type().Elem().Kind() == reflect.Ptr
+	seen := make([]any, 0, n)
 
-	for i := 0; i < vs.Len(); i++ {
+	for i := 0; i < n; i++ {
 		v := vs.Index(i)
 		curr := v.Interface()
 
-		if v.Kind() == reflect.Ptr && !v.IsNil() {
+		if isPtr && !v.IsNil() {
 			curr = v.Elem().Interface()
 		}
 
