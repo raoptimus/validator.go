@@ -9,8 +9,15 @@ package validator
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 )
+
+// deepEqualSizeThreshold is the slice length at which non-comparable duplicate
+// detection switches from O(n²) reflect.DeepEqual to O(n) JSON-key hashing.
+// Benchmarked on structs with slice/map fields: DeepEqual wins below this size
+// due to zero per-comparison allocations; JSON wins above due to O(n) vs O(n²).
+const deepEqualSizeThreshold = 30
 
 type UniqueValues struct {
 	message   string
@@ -82,9 +89,10 @@ func (r *UniqueValues) setSkipOnError(v bool) {
 //
 // The element type determines the comparison strategy:
 //   - Comparable types (primitives, fixed-size structs): O(n) hash map lookup.
-//   - Non-comparable types (e.g. protobuf structs with slice fields):
-//     O(n²) pairwise reflect.DeepEqual — avoids allocations from string
-//     serialization and is faster for typical validation arrays (< 30 elements).
+//   - Non-comparable types, small slices (≤ deepEqualSizeThreshold):
+//     O(n²) pairwise reflect.DeepEqual — zero per-comparison allocations.
+//   - Non-comparable types, large slices (> deepEqualSizeThreshold):
+//     O(n) JSON-serialized key hashing — avoids quadratic blowup.
 func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {
 	vs := reflect.ValueOf(value)
 	if vs.Kind() != reflect.Slice {
@@ -100,6 +108,10 @@ func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {
 
 	if elemType.Comparable() {
 		return r.validateComparable(vs)
+	}
+
+	if vs.Len() > deepEqualSizeThreshold {
+		return r.validateJSONKey(vs)
 	}
 
 	return r.validateDeepEqual(vs)
@@ -156,6 +168,37 @@ func (r *UniqueValues) validateDeepEqual(vs reflect.Value) error {
 		}
 
 		seen = append(seen, curr)
+	}
+
+	return nil
+}
+
+// validateJSONKey handles large slices of non-comparable types using O(n)
+// JSON-serialized key hashing. Each element is marshaled to a deterministic
+// JSON string used as a map key for duplicate detection.
+func (r *UniqueValues) validateJSONKey(vs reflect.Value) error {
+	n := vs.Len()
+	isPtr := vs.Type().Elem().Kind() == reflect.Ptr
+	set := make(map[string]struct{}, n)
+
+	for i := 0; i < n; i++ {
+		v := vs.Index(i)
+		curr := v.Interface()
+
+		if isPtr && !v.IsNil() {
+			curr = v.Elem().Interface()
+		}
+
+		key, err := json.Marshal(curr)
+		if err != nil {
+			return NewResult().WithError(NewValidationError(r.message))
+		}
+
+		if _, ok := set[string(key)]; ok {
+			return NewResult().WithError(NewValidationError(r.message))
+		}
+
+		set[string(key)] = struct{}{}
 	}
 
 	return nil
