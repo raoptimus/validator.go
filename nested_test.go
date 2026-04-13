@@ -63,14 +63,14 @@ func TestNested_ValidateValue(t *testing.T) {
 
 	expectedError := Result{errors: []*ValidationError{
 		{
-			Message:   "Value must be no less than 2.",
-			Params:    map[string]any{"max": int64(3), "min": int64(2)},
-			ValuePath: []string{"inline", "count"},
-		},
-		{
 			Message:   "This value should contain at least 1.",
 			Params:    map[string]any{"max": 255, "min": 1},
 			ValuePath: []string{"each", "1"},
+		},
+		{
+			Message:   "Value must be no less than 2.",
+			Params:    map[string]any{"max": int64(3), "min": int64(2)},
+			ValuePath: []string{"inline", "count"},
 		},
 	}}
 

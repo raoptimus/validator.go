@@ -11,6 +11,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"sort"
 
 	"github.com/raoptimus/validator.go/v2/set"
 )
@@ -72,7 +73,14 @@ func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 	ctx = withDataSet(ctx, normalizedDS)
 	results := make([]Result, 0, len(rules))
 
-	for field, fieldRules := range rules {
+	fields := make([]string, 0, len(rules))
+	for field := range rules {
+		fields = append(fields, field)
+	}
+	sort.Strings(fields)
+
+	for _, field := range fields {
+		fieldRules := rules[field]
 		fieldValue, err := normalizedDS.FieldValue(field) // 2 allocs
 		if err != nil {
 			return err

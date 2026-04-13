@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -162,7 +163,14 @@ func (r *Nested) ValidateValue(ctx context.Context, value any) error {
 	compoundResult := NewResult()
 	results := make([]Result, 0, len(r.rules))
 
-	for fieldName, rules := range r.rules {
+	fieldNames := make([]string, 0, len(r.rules))
+	for fieldName := range r.rules {
+		fieldNames = append(fieldNames, fieldName)
+	}
+	sort.Strings(fieldNames)
+
+	for _, fieldName := range fieldNames {
+		rules := r.rules[fieldName]
 		// todo: parse valuePath
 
 		validatedValue, err := data.FieldValue(fieldName)
