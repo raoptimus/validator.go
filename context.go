@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -47,11 +54,11 @@ func (c *Context) withDataSet(ds DataSet) *Context {
 	return &cc
 }
 
-func (c *Context) dataSet() (DataSet, bool) {
+func (c *Context) dataSet() (DataSet, bool) { //nolint:ireturn // DataSet is internal interface
 	return c.ds, c.ds != nil
 }
 
-func DataSetFromContext[T DataSet](ctx *Context) (T, bool) {
+func DataSetFromContext[T DataSet](ctx *Context) (T, bool) { //nolint:ireturn // generic interface
 	if ds, ok := ctx.dataSet(); ok {
 		if dsT, ok2 := ds.(T); ok2 {
 			return dsT, true
@@ -66,10 +73,10 @@ func DataSetFromContext[T DataSet](ctx *Context) (T, bool) {
 
 func withDataSet(ctx context.Context, ds DataSet) context.Context {
 	return NewContext(ctx).withDataSet(ds)
-	//return context.WithValue(ctx, KeyDataSet, ds)
+	// return context.WithValue(ctx, KeyDataSet, ds)
 }
 
-func ExtractDataSet[T any](ctx context.Context) (T, bool) {
+func ExtractDataSet[T any](ctx context.Context) (T, bool) { //nolint:ireturn // generic interface
 	var v T
 	if ctx == nil {
 		return v, false
@@ -110,7 +117,7 @@ func contextWithRootDataSet(ctx context.Context, ds any) context.Context {
 	return context.WithValue(ctx, KeyRootDataSet, ds)
 }
 
-func RootDataSetFromContext[T any](ctx context.Context) (T, bool) {
+func RootDataSetFromContext[T any](ctx context.Context) (T, bool) { //nolint:ireturn // generic interface
 	v, ok := ctx.Value(KeyRootDataSet).(T)
 	return v, ok
 }
@@ -119,12 +126,12 @@ func contextWithNestedDataSet(ctx context.Context, ds any) context.Context {
 	return context.WithValue(ctx, KeyNestedDataSet, ds)
 }
 
-func NestedDataSetFromContext[T any](ctx context.Context) (T, bool) {
+func NestedDataSetFromContext[T any](ctx context.Context) (T, bool) { //nolint:ireturn // generic interface
 	v, ok := ctx.Value(KeyNestedDataSet).(T)
 	return v, ok
 }
 
-func PrevNestedDataSetFromContext[T any](ctx context.Context) (T, bool) {
+func PrevNestedDataSetFromContext[T any](ctx context.Context) (T, bool) { //nolint:ireturn // generic interface
 	v, ok := ctx.Value(KeyPrevNestedDataSet).(T)
 	return v, ok
 }

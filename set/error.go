@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package set
 
 import (
@@ -5,7 +12,7 @@ import (
 	"fmt"
 )
 
-var BaseUndefinedFieldError = errors.New("undefined field")
+var ErrUndefinedField = errors.New("undefined field")
 
 type UndefinedFieldError struct {
 	dataSetName   string
@@ -20,9 +27,9 @@ func NewUndefinedFieldError(dataSetPtr any, attributeName string) *UndefinedFiel
 }
 
 func (u *UndefinedFieldError) Error() string {
-	return BaseUndefinedFieldError.Error() + ": " + u.dataSetName + "." + u.attributeName
+	return ErrUndefinedField.Error() + ": " + u.dataSetName + "." + u.attributeName
 }
 
 func (u *UndefinedFieldError) Unwrap() error {
-	return BaseUndefinedFieldError
+	return ErrUndefinedField
 }

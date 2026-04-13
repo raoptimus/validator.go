@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -124,7 +131,7 @@ func TestValidatorRequired_NotExistField_ReturnsExpectedError(t *testing.T) {
 	err := Validate(ctx, &dto, rules)
 	assert.NotNil(t, err)
 	assert.Equal(t, "undefined field: validator.testObject.NotExists", err.Error())
-	assert.Equal(t, set.BaseUndefinedFieldError, errors.Unwrap(err))
+	assert.Equal(t, set.ErrUndefinedField, errors.Unwrap(err))
 }
 
 func TestValidatorRequired_NotEmptySlice_ReturnsExpectedNil(t *testing.T) {

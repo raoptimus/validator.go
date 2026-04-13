@@ -24,7 +24,6 @@ test:
 		-covermode=atomic \
 		-coverprofile=$(REPORTS_DIR)/coverage.txt $(SOURCE_FILES) \
 		-run $(TEST_PATTERN) \
-		-bench=$(TEST_PATTERN) \
 		-timeout=2m
 
 lint: ## Run lint

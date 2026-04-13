@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -5,9 +12,9 @@ import (
 )
 
 var (
-	NotExistsDataSetIntoContextError = errors.New("not exists data set into context")
-	UnknownOperatorError             = errors.New("unknown operator")
-	CallbackUnexpectedValueTypeError = errors.New("callback unexpected value type")
+	ErrNotExistsDataSetIntoContext = errors.New("not exists data set into context")
+	ErrUnknownOperator             = errors.New("unknown operator")
+	ErrCallbackUnexpectedValueType = errors.New("callback unexpected value type")
 )
 
 type ValidationError struct {

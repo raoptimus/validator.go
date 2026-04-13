@@ -1,8 +1,16 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
 	"context"
 	"net/url"
+	"slices"
 	"strings"
 
 	"golang.org/x/net/idna"
@@ -10,7 +18,7 @@ import (
 	"github.com/raoptimus/validator.go/v2/regexpc"
 )
 
-var regexpDomain, _ = regexpc.Compile(`://([^/]+)`)
+var regexpDomain, _ = regexpc.Compile(`://([^/]+)`) //nolint:errcheck // pattern is constant
 
 const AllowAnyURLSchema = "*"
 const defaultURLRegexpPattern = `^{schemes}:\/\/(([a-zA-Z0-9][a-zA-Z0-9_-]*)(\.[a-zA-Z0-9][a-zA-Z0-9_-]*)+)(?::\d{1,5})?([?\/#].*$|$)`
@@ -147,11 +155,12 @@ func (r *URL) convertIDN(value string) string {
 }
 
 func (r *URL) idnToASCII(idn string) string {
-	if d, err := idna.ToASCII(idn); err == nil {
+	d, err := idna.ToASCII(idn)
+	if err == nil {
 		return d
-	} else {
-		return idn
 	}
+
+	return idn
 }
 
 func (r *URL) getPattern() string {
@@ -255,13 +264,8 @@ func (r *DeepLinkURL) ValidateValue(_ context.Context, value any) error {
 		return NewResult().WithError(NewValidationError(r.message))
 	}
 
-	if len(r.invalidSchemes) > 0 {
-		for _, s := range r.invalidSchemes {
-			if s == uri.Scheme {
-				return NewResult().WithError(NewValidationError(r.message))
-			}
-		}
-
+	if slices.Contains(r.invalidSchemes, uri.Scheme) {
+		return NewResult().WithError(NewValidationError(r.message))
 	}
 
 	return nil

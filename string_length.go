@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -12,20 +19,20 @@ type StringLength struct {
 	// string user-defined error message used when the length of the value is smaller than {see min}.
 	tooShortMessage string
 	// string user-defined error message used when the length of the value is greater than {see max}.
-	tooLongMessage string
-	min, max       int
-	whenFunc       WhenFunc
-	skipEmpty      bool
-	skipError      bool
+	tooLongMessage       string
+	minLength, maxLength int
+	whenFunc             WhenFunc
+	skipEmpty            bool
+	skipError            bool
 }
 
-func NewStringLength(min, max int) *StringLength {
+func NewStringLength(minLen, maxLen int) *StringLength {
 	return &StringLength{
 		message:         "This value must be a string.",
 		tooShortMessage: "This value should contain at least {min}.",
 		tooLongMessage:  "This value should contain at most {max}.",
-		min:             min,
-		max:             max,
+		minLength:       minLen,
+		maxLength:       maxLen,
 	}
 }
 
@@ -104,24 +111,24 @@ func (r *StringLength) ValidateValue(_ context.Context, value any) error {
 	v = strings.TrimSpace(v)
 	l := utf8.RuneCountInString(v)
 
-	if l < r.min {
+	if l < r.minLength {
 		result = NewResult().
 			WithError(
 				NewValidationError(r.tooShortMessage).
 					WithParams(map[string]any{
-						"min": r.min,
-						"max": r.max,
+						"min": r.minLength,
+						"max": r.maxLength,
 					}),
 			)
 	}
 
-	if l > r.max {
+	if l > r.maxLength {
 		result = NewResult().
 			WithError(
 				NewValidationError(r.tooLongMessage).
 					WithParams(map[string]any{
-						"min": r.min,
-						"max": r.max,
+						"min": r.minLength,
+						"max": r.maxLength,
 					}),
 			)
 	}

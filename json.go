@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -37,9 +44,7 @@ func (j *JSON) ValidateValue(_ context.Context, value any) error {
 	case *json.RawMessage:
 		bytes = *v
 	case fmt.Stringer:
-		if i, ok := v.(fmt.Stringer); ok {
-			bytes = []byte(i.String())
-		}
+		bytes = []byte(v.String())
 	default:
 		return NewResult().WithError(NewValidationError(j.message))
 	}

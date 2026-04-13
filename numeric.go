@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -5,8 +12,8 @@ import (
 )
 
 type Numeric struct {
-	min               float64
-	max               float64
+	minValue          float64
+	maxValue          float64
 	notNumericMessage string
 	tooBigMessage     string
 	tooSmallMessage   string
@@ -15,10 +22,10 @@ type Numeric struct {
 	skipError         bool
 }
 
-func NewNumeric(min, max float64) *Numeric {
+func NewNumeric(minVal, maxVal float64) *Numeric {
 	return &Numeric{
-		min:               min,
-		max:               max,
+		minValue:          minVal,
+		maxValue:          maxVal,
 		notNumericMessage: "Value must be a numeric.",
 		tooBigMessage:     "Value must be no greater than {max}.",
 		tooSmallMessage:   "Value must be no less than {min}.",
@@ -112,22 +119,22 @@ func (n *Numeric) ValidateValue(_ context.Context, value any) error {
 
 	result := NewResult()
 
-	if i < n.min {
+	if i < n.minValue {
 		result = result.WithError(
 			NewValidationError(n.tooSmallMessage).
 				WithParams(map[string]any{
-					"min": n.min,
-					"max": n.max,
+					"min": n.minValue,
+					"max": n.maxValue,
 				}),
 		)
 	}
 
-	if i > n.max {
+	if i > n.maxValue {
 		result = result.WithError(
 			NewValidationError(n.tooBigMessage).
 				WithParams(map[string]any{
-					"min": n.min,
-					"max": n.max,
+					"min": n.minValue,
+					"max": n.maxValue,
 				}),
 		)
 	}

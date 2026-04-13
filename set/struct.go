@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package set
 
 import (
@@ -7,7 +14,7 @@ import (
 	"strings"
 )
 
-var DataMustBeStructPointerError = errors.New("dataSet must be a struct pointer")
+var ErrDataMustBeStructPointer = errors.New("dataSet must be a struct pointer")
 
 type DataSetStruct struct {
 	dataPtr    any           // pointer on struct
@@ -26,7 +33,7 @@ func NewDataSetStruct(data any) (*DataSetStruct, error) {
 	}
 
 	if dataType.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("%v, got %T", DataMustBeStructPointerError, data)
+		return nil, fmt.Errorf("%w, got %T", ErrDataMustBeStructPointer, data)
 	}
 
 	return &DataSetStruct{

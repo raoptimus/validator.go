@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -39,7 +46,7 @@ func (r *Required) WithMessage(message string) *Required {
 	return &rc
 }
 
-// deprecated: should be removed
+// Deprecated: should be removed
 func (r *Required) WithAllowZeroValue() *Required {
 	return r
 }

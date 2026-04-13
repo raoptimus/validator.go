@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -68,7 +75,7 @@ func (c *Callback[T]) ValidateValue(ctx context.Context, value any) error {
 	v, ok := value.(T)
 	if !ok {
 		var v T
-		return errors.Wrapf(CallbackUnexpectedValueTypeError, "got %T want %T", value, v)
+		return errors.Wrapf(ErrCallbackUnexpectedValueType, "got %T want %T", value, v)
 	}
 
 	if err := c.f(ctx, v); err != nil {

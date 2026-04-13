@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -5,8 +12,8 @@ import (
 )
 
 type Number struct {
-	min              int64
-	max              int64
+	minValue         int64
+	maxValue         int64
 	notNumberMessage string
 	tooBigMessage    string
 	tooSmallMessage  string
@@ -15,10 +22,10 @@ type Number struct {
 	skipError        bool
 }
 
-func NewNumber(min, max int64) *Number {
+func NewNumber(minVal, maxVal int64) *Number {
 	return &Number{
-		min:              min,
-		max:              max,
+		minValue:         minVal,
+		maxValue:         maxVal,
 		notNumberMessage: "Value must be a number.",
 		tooBigMessage:    "Value must be no greater than {max}.",
 		tooSmallMessage:  "Value must be no less than {min}.",
@@ -105,7 +112,7 @@ func (r *Number) ValidateValue(_ context.Context, value any) error {
 	case *int:
 		i = int64(*v)
 	case *uint:
-		i = int64(*v)
+		i = int64(*v) //nolint:gosec // overflow acceptable for validation
 	case *int16:
 		i = int64(*v)
 	case *uint16:
@@ -117,7 +124,7 @@ func (r *Number) ValidateValue(_ context.Context, value any) error {
 	case *int64:
 		i = *v
 	case *uint64:
-		i = int64(*v)
+		i = int64(*v) //nolint:gosec // overflow acceptable for validation
 	case int8:
 		i = int64(v)
 	case uint8:
@@ -125,7 +132,7 @@ func (r *Number) ValidateValue(_ context.Context, value any) error {
 	case int:
 		i = int64(v)
 	case uint:
-		i = int64(v)
+		i = int64(v) //nolint:gosec // overflow acceptable for validation
 	case int16:
 		i = int64(v)
 	case uint16:
@@ -137,29 +144,29 @@ func (r *Number) ValidateValue(_ context.Context, value any) error {
 	case int64:
 		i = v
 	case uint64:
-		i = int64(v)
+		i = int64(v) //nolint:gosec // overflow acceptable for validation
 	default:
 		return NewResult().WithError(NewValidationError(r.notNumberMessage))
 	}
 
 	result := NewResult()
 
-	if i < r.min {
+	if i < r.minValue {
 		result = result.WithError(
 			NewValidationError(r.tooSmallMessage).
 				WithParams(map[string]any{
-					"min": r.min,
-					"max": r.max,
+					"min": r.minValue,
+					"max": r.maxValue,
 				}),
 		)
 	}
 
-	if i > r.max {
+	if i > r.maxValue {
 		result = result.WithError(
 			NewValidationError(r.tooBigMessage).
 				WithParams(map[string]any{
-					"min": r.min,
-					"max": r.max,
+					"min": r.minValue,
+					"max": r.maxValue,
 				}),
 		)
 	}

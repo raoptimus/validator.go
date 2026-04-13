@@ -1,8 +1,24 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
 	"context"
 	"time"
+)
+
+const (
+	OperatorEqual            = "=="
+	OperatorNotEqual         = "!="
+	OperatorGreaterThan      = ">"
+	OperatorGreaterThanEqual = ">="
+	OperatorLessThan         = "<"
+	OperatorLessThanEqual    = "<="
 )
 
 type Compare struct {
@@ -25,17 +41,17 @@ func NewCompare(targetValue any, targetAttribute, operator string) *Compare {
 	}
 
 	switch operator {
-	case "==":
+	case OperatorEqual:
 		c.message = "Value must be equal to '{targetValueOrAttribute}'."
-	case "!=":
+	case OperatorNotEqual:
 		c.message = "Value must not be equal to '{targetValueOrAttribute}'."
-	case ">":
+	case OperatorGreaterThan:
 		c.message = "Value must be greater than '{targetValueOrAttribute}'"
-	case ">=":
+	case OperatorGreaterThanEqual:
 		c.message = "Value must be greater than or equal to '{targetValueOrAttribute}'"
-	case "<":
+	case OperatorLessThan:
 		c.message = "Value must be less than '{targetValueOrAttribute}'"
-	case "<=":
+	case OperatorLessThanEqual:
 		c.message = "Value must be less than or equal to '{targetValueOrAttribute}'"
 	default:
 		c.operatorIsValid = false
@@ -97,7 +113,7 @@ func (r *Compare) setSkipOnError(v bool) {
 
 func (r *Compare) ValidateValue(ctx context.Context, value any) error {
 	if !r.operatorIsValid {
-		return UnknownOperatorError
+		return ErrUnknownOperator
 	}
 
 	var (
@@ -111,7 +127,7 @@ func (r *Compare) ValidateValue(ctx context.Context, value any) error {
 	if r.targetValue == nil {
 		dataSet, ok := ExtractDataSet[DataSet](ctx)
 		if !ok {
-			return NotExistsDataSetIntoContextError
+			return ErrNotExistsDataSetIntoContext
 		}
 		targetValue, err = dataSet.FieldValue(r.targetAttribute)
 		if err != nil {
@@ -121,27 +137,27 @@ func (r *Compare) ValidateValue(ctx context.Context, value any) error {
 	}
 
 	switch r.operator {
-	case "==":
+	case OperatorEqual:
 		if r.eq(value, targetValue) {
 			return nil
 		}
-	case "!=":
+	case OperatorNotEqual:
 		if !r.eq(value, targetValue) {
 			return nil
 		}
-	case ">":
+	case OperatorGreaterThan:
 		if r.gt(value, targetValue) {
 			return nil
 		}
-	case ">=":
+	case OperatorGreaterThanEqual:
 		if r.eq(value, targetValue) || r.gt(value, targetValue) {
 			return nil
 		}
-	case "<":
+	case OperatorLessThan:
 		if !r.eq(value, targetValue) && !r.gt(value, targetValue) {
 			return nil
 		}
-	case "<=":
+	case OperatorLessThanEqual:
 		if r.eq(value, targetValue) || !r.gt(value, targetValue) {
 			return nil
 		}

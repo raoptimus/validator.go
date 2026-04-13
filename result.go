@@ -1,9 +1,17 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
 	"strings"
 )
 
+//nolint:errname // Result is a well-known type in the public API
 type Result struct {
 	errors []*ValidationError
 }

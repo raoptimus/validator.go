@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -92,7 +99,7 @@ func (r *Each) ValidateValue(ctx context.Context, value any) error {
 		return result.WithError(
 			NewValidationError(r.incorrectInputMessage).
 				WithParams(map[string]any{
-					//"attribute": "",//todo
+					// "attribute": "",//todo
 					"value": value,
 				}),
 		)

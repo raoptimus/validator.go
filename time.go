@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -69,16 +76,16 @@ func (r *Time) WithFormat(format string) *Time {
 	return &rc
 }
 
-func (r *Time) WithMin(min TimeFunc) *Time {
+func (r *Time) WithMin(minFunc TimeFunc) *Time {
 	rc := *r
-	rc.min = min
+	rc.min = minFunc
 
 	return &rc
 }
 
-func (r *Time) WithMax(max TimeFunc) *Time {
+func (r *Time) WithMax(maxFunc TimeFunc) *Time {
 	rc := *r
-	rc.max = max
+	rc.max = maxFunc
 
 	return &rc
 }

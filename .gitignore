@@ -18,3 +18,6 @@ vendor/
 *.vscode
 *.build
 *.reports
+*.md
+!README.md
+.claude

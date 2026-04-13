@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -13,14 +20,14 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 		return nil
 	}
 
-	if extDS, ok := ExtractDataSet[DataSet](ctx); !ok || value != extDS {
-		ctx = withDataSet(ctx, extDS)
-	} else {
+	if extDS, ok := ExtractDataSet[DataSet](ctx); ok && value == extDS {
 		dataSet, err := normalizeDataSet(value)
 		if err != nil {
 			return err
 		}
 		ctx = withDataSet(ctx, dataSet)
+	} else {
+		ctx = withDataSet(ctx, extDS)
 	}
 
 	rules = normalizeRules(rules)
@@ -128,7 +135,7 @@ func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 	return nil
 }
 
-func normalizeDataSet(ds any) (DataSet, error) {
+func normalizeDataSet(ds any) (DataSet, error) { //nolint:ireturn // DataSet is internal interface
 	if ds == nil {
 		return set.NewDataSetAny(ds), nil
 	}
@@ -160,17 +167,21 @@ func normalizeRules(rules []Rule) []Rule {
 	}
 
 	for i := range rules {
-		if r, ok := rules[i].(*Required); ok {
-			if i == 0 {
-				break
-			}
-			ret := make([]Rule, 0, len(rules))
-			ret = append(ret, r)
-			ret = append(ret, rules[:i]...)
-			ret = append(ret, rules[i:]...)
-
-			return ret
+		r, ok := rules[i].(*Required)
+		if !ok {
+			continue
 		}
+
+		if i == 0 {
+			break
+		}
+
+		ret := make([]Rule, 0, len(rules))
+		ret = append(ret, r)
+		ret = append(ret, rules[:i]...)
+		ret = append(ret, rules[i:]...)
+
+		return ret
 	}
 
 	return rules

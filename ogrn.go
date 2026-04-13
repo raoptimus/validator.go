@@ -1,3 +1,10 @@
+/**
+ * This file is part of the raoptimus/validator.go library
+ *
+ * @copyright Copyright (c) Evgeniy Urvantsev
+ * @license https://github.com/raoptimus/validator.go/blob/master/LICENSE.md
+ * @link https://github.com/raoptimus/validator.go
+ */
 package validator
 
 import (
@@ -8,9 +15,14 @@ import (
 )
 
 const (
-	ogrnNumberRegExp = "^[0-9]+$"
-	ogrnNumberLen    = 13
-	ogrnipNumberLen  = 15
+	ogrnNumberRegExp  = "^[0-9]+$"
+	ogrnNumberLen     = 13
+	ogrnipNumberLen   = 15
+	ogrnDivisor       = 11
+	ogrnipDivisor     = 13
+	ogrnControlModulo = 10
+	ogrnPrefixLen     = 12
+	ogrnipPrefixLen   = 14
 )
 
 type OGRN struct {
@@ -119,20 +131,20 @@ func (o *OGRN) validateOGRN(ogrn string) error {
 		return NewResult().WithError(NewValidationError(o.ogrnMessage))
 	}
 
-	num, err := strconv.ParseInt(ogrn[:12], 10, 64)
+	num, err := strconv.ParseInt(ogrn[:ogrnPrefixLen], 10, 64)
 	if err != nil {
 		return NewResult().WithError(NewValidationError(o.ogrnMessage))
 	}
 
-	remainder := num % 11
-	controlDigit := int(remainder % 10)
+	remainder := num % ogrnDivisor
+	controlDigit := int(remainder % ogrnControlModulo)
 
 	// Если остаток равен 10, то контрольное число должно быть 0
-	if remainder == 10 {
+	if remainder == ogrnControlModulo {
 		controlDigit = 0
 	}
 
-	lastDigit, err := strconv.Atoi(ogrn[12:])
+	lastDigit, err := strconv.Atoi(ogrn[ogrnPrefixLen:])
 	if err != nil {
 		return NewResult().WithError(NewValidationError(o.ogrnMessage))
 	}
@@ -149,15 +161,15 @@ func (o *OGRN) validateOGRNIP(ogrnip string) error {
 		return NewResult().WithError(NewValidationError(o.ogrnipMessage))
 	}
 
-	num, err := strconv.ParseInt(ogrnip[:14], 10, 64)
+	num, err := strconv.ParseInt(ogrnip[:ogrnipPrefixLen], 10, 64)
 	if err != nil {
 		return NewResult().WithError(NewValidationError(o.ogrnipMessage))
 	}
 
-	remainder := num % 13
-	controlDigit := int(remainder % 10)
+	remainder := num % ogrnipDivisor
+	controlDigit := int(remainder % ogrnControlModulo)
 
-	lastDigit, err := strconv.Atoi(ogrnip[14:])
+	lastDigit, err := strconv.Atoi(ogrnip[ogrnipPrefixLen:])
 	if err != nil {
 		return NewResult().WithError(NewValidationError(o.ogrnipMessage))
 	}
