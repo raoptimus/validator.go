@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/raoptimus/validator.go/v2/set"
 )
@@ -25,19 +26,23 @@ const (
 )
 
 type Nested struct {
-	normalizeRulesEnabled bool
-	rules                 RuleSet
-	message               string
-	whenFunc              WhenFunc
-	skipEmpty             bool
-	skipError             bool
+	// normalizeOnce guards lazy rule normalization so that concurrent
+	// ValidateValue calls on a shared *Nested are safe. Stored as a pointer
+	// because the builder methods (WithMessage, SkipOnEmpty, etc.) copy the
+	// struct — sync.Once must not be copied after first use.
+	normalizeOnce *sync.Once
+	normalizeErr  error
+	rules         RuleSet
+	message       string
+	whenFunc      WhenFunc
+	skipEmpty     bool
+	skipError     bool
 }
 
 func NewNested(rules RuleSet) *Nested {
 	return &Nested{
-		normalizeRulesEnabled: true,
-		rules:                 rules,
-		message:               "",
+		normalizeOnce: &sync.Once{},
+		rules:         rules,
 	}
 }
 
@@ -80,7 +85,7 @@ func (r *Nested) setSkipOnEmpty(v bool) {
 
 func (r *Nested) notNormalizeRules() *Nested {
 	rc := *r
-	rc.normalizeRulesEnabled = false
+	rc.normalizeOnce.Do(func() {}) // mark as already normalized
 
 	return &rc
 }
@@ -100,13 +105,19 @@ func (r *Nested) setSkipOnError(v bool) {
 }
 
 func (r *Nested) ValidateValue(ctx context.Context, value any) error {
-	if r.normalizeRulesEnabled {
-		r.normalizeRulesEnabled = false // once
-		if rules, err := r.normalizeRules(); err != nil {
-			return err
-		} else {
-			r.rules = rules
+	r.normalizeOnce.Do(func() {
+		rules, err := r.normalizeRules()
+		if err != nil {
+			r.normalizeErr = err
+
+			return
 		}
+
+		r.rules = rules
+	})
+
+	if r.normalizeErr != nil {
+		return r.normalizeErr
 	}
 
 	if value == nil {
@@ -161,7 +172,6 @@ func (r *Nested) ValidateValue(ctx context.Context, value any) error {
 	}
 
 	compoundResult := NewResult()
-	results := make([]Result, 0, len(r.rules))
 
 	fieldNames := make([]string, 0, len(r.rules))
 	for fieldName := range r.rules {
@@ -183,7 +193,6 @@ func (r *Nested) ValidateValue(ctx context.Context, value any) error {
 			var itemResult Result
 
 			if errors.As(err, &itemResult) {
-				result := NewResult()
 				for _, itemError := range itemResult.Errors() {
 					var errorValuePath []string
 					if _, err := strconv.Atoi(valuePath); err != nil {
@@ -195,19 +204,14 @@ func (r *Nested) ValidateValue(ctx context.Context, value any) error {
 						errorValuePath = append(errorValuePath, itemError.ValuePath...)
 					}
 					itemError.ValuePath = errorValuePath
-					result = result.WithError(itemError)
+					compoundResult = compoundResult.WithError(itemError)
 				}
 
-				results = append(results, result)
 				continue
 			}
 
 			return err
 		}
-	}
-
-	for i := range results {
-		compoundResult = compoundResult.WithError(results[i].Errors()...)
 	}
 
 	if !compoundResult.IsValid() {
@@ -231,25 +235,22 @@ func (r *Nested) normalizeRules() (RuleSet, error) {
 			if valuePath == "" {
 				continue
 			}
-			parts := strings.Split(valuePath, separator)
-			if len(parts) == 1 {
+			idx := strings.LastIndex(valuePath, separator)
+			if idx < 0 {
 				continue
 			}
 
 			needBreak = false
 
-			lastValuePath := parts[len(parts)-1]
-			remainingValuePath := strings.Join(parts, NestedShortcut)
-			remainingValuePath = strings.TrimRight(remainingValuePath, separator)
+			lastValuePath := valuePath[idx+1:]
+			remainingValuePath := strings.ReplaceAll(valuePath[:idx], separator, NestedShortcut)
 			if _, ok := rulesMap[remainingValuePath]; !ok {
-				if _, ok := rulesMap[remainingValuePath]; ok {
-					rulesMap[remainingValuePath][lastValuePath] = rules
-				} else {
-					rulesMap[remainingValuePath] = RuleSet{lastValuePath: rules}
-				}
-
-				delete(nRules, valuePath)
+				rulesMap[remainingValuePath] = RuleSet{lastValuePath: rules}
+			} else {
+				rulesMap[remainingValuePath][lastValuePath] = rules
 			}
+
+			delete(nRules, valuePath)
 		}
 
 		for valuePath, nestedRules := range rulesMap {
