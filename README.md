@@ -163,6 +163,44 @@ if err != nil {
 }
 ```
 
+### Multilanguage support
+
+Validation messages are translated automatically based on the language in context.
+Built-in languages: English (`en`, default) and Russian (`ru`).
+
+```go
+// Set language in context (e.g. from HTTP middleware)
+ctx := validator.WithLanguage(context.Background(), validator.LanguageRU)
+
+err := validator.ValidateValue(ctx, "", validator.NewRequired())
+// err.Error() == "Значение не должно быть пустым."
+```
+
+#### Register a custom language
+
+```go
+func init() {
+    validator.Translations.Register(validator.Language("es"), map[string]string{
+        validator.MessageRequired: "El valor no puede estar vacío.",
+        validator.MessageTooShort: "El valor debe contener al menos {min} caracteres.",
+        // ...
+    })
+}
+```
+
+#### Check for missing translations
+
+```go
+missing := validator.Translations.Missing(validator.Language("es"))
+// returns a list of message IDs without translation for the given language
+```
+
+#### Use DummyTranslator (no translation, placeholder replacement only)
+
+```go
+validator.SetTranslator(&validator.DummyTranslator{})
+```
+
 ## Available Rules
 
 | Rule | Description |
