@@ -102,14 +102,37 @@ func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {
 	}
 
 	// Type-specialized fast paths skip reflection and the per-element
-	// any-boxing that map[any]struct{} forces. Covers the most common
-	// validator inputs; everything else falls through to reflect.
+	// any-boxing that map[any]struct{} forces. Covers the full set of
+	// comparable primitives — everything else falls through to reflect.
+	// Note: []byte is []uint8, so the uint8 case handles it too.
 	switch s := value.(type) {
 	case []string:
 		return uniquePrimitive(s, r.message)
 	case []int:
 		return uniquePrimitive(s, r.message)
+	case []int8:
+		return uniquePrimitive(s, r.message)
+	case []int16:
+		return uniquePrimitive(s, r.message)
+	case []int32:
+		return uniquePrimitive(s, r.message)
 	case []int64:
+		return uniquePrimitive(s, r.message)
+	case []uint:
+		return uniquePrimitive(s, r.message)
+	case []uint8:
+		return uniquePrimitive(s, r.message)
+	case []uint16:
+		return uniquePrimitive(s, r.message)
+	case []uint32:
+		return uniquePrimitive(s, r.message)
+	case []uint64:
+		return uniquePrimitive(s, r.message)
+	case []float32:
+		return uniquePrimitive(s, r.message)
+	case []float64:
+		return uniquePrimitive(s, r.message)
+	case []bool:
 		return uniquePrimitive(s, r.message)
 	}
 
