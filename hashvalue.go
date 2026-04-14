@@ -10,8 +10,7 @@ import (
 const (
 	fnvOffset64 = 14695981039346656037
 	fnvPrime64  = 1099511628211
-	bitsPerByte = 8
-	uint64Bytes = 8
+	lowByteMask = 0xff
 )
 
 // Type tags disambiguate values across kinds so that, e.g., the uint 65
@@ -46,23 +45,37 @@ func (hw *hasher) reset() {
 }
 
 func (hw *hasher) writeByte(b byte) {
-	hw.state ^= uint64(b)
-	hw.state *= fnvPrime64
+	hw.state = (hw.state ^ uint64(b)) * fnvPrime64
 }
 
 // writeUint64 absorbs the 8 little-endian bytes of v into the FNV-64a state.
+// Manually unrolled: keeping state in a local register avoids reloading
+// hw.state through the pointer on every byte, and elides the loop overhead
+// (which is comparable to the per-byte work itself).
+//
+//nolint:mnd // bit-shift constants are inherent to a uint64 byte-by-byte unroll
 func (hw *hasher) writeUint64(v uint64) {
-	for i := 0; i < uint64Bytes; i++ {
-		//nolint:gosec // intentional truncation to low 8 bits
-		hw.writeByte(byte(v >> (i * bitsPerByte)))
-	}
+	s := hw.state
+	s = (s ^ (v & lowByteMask)) * fnvPrime64
+	s = (s ^ ((v >> 8) & lowByteMask)) * fnvPrime64
+	s = (s ^ ((v >> 16) & lowByteMask)) * fnvPrime64
+	s = (s ^ ((v >> 24) & lowByteMask)) * fnvPrime64
+	s = (s ^ ((v >> 32) & lowByteMask)) * fnvPrime64
+	s = (s ^ ((v >> 40) & lowByteMask)) * fnvPrime64
+	s = (s ^ ((v >> 48) & lowByteMask)) * fnvPrime64
+	s = (s ^ ((v >> 56) & lowByteMask)) * fnvPrime64
+	hw.state = s
 }
 
+// writeString hoists hw.state into a local so the compiler can keep it in
+// a register across the loop. Through the pointer receiver it would be
+// reloaded on every iteration.
 func (hw *hasher) writeString(s string) {
+	state := hw.state
 	for i := 0; i < len(s); i++ {
-		hw.state ^= uint64(s[i])
-		hw.state *= fnvPrime64
+		state = (state ^ uint64(s[i])) * fnvPrime64
 	}
+	hw.state = state
 }
 
 // maxHashDepth caps recursion so cyclic graphs (a map containing itself,

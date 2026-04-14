@@ -144,15 +144,21 @@ func (r *UniqueValues) validateComparable(vs reflect.Value) error {
 
 // validateHashKey handles slices of non-comparable or interface-typed
 // elements using O(n) average-case bucketed hashing. Elements are grouped
-// into buckets by an FNV-64a hash of their field structure (see
-// hashvalue.go). Because a 64-bit hash cannot prove equality, any bucket
-// with more than one member is verified with reflect.DeepEqual — a hash
-// collision between unequal values is not a false duplicate, it just
-// degrades that bucket to O(k) DeepEqual probing per insert.
+// by an FNV-64a hash of their field structure (see hashvalue.go).
+//
+// The common case — every element produces a unique 64-bit hash — is
+// handled by a single map[uint64]int (firstIdx). Only on a hash collision
+// is the lazily-allocated overflow map populated, so n unique elements
+// trigger n map writes and zero slice allocations.
+//
+// Because a 64-bit hash cannot prove equality, any collision is verified
+// with reflect.DeepEqual: a hash collision between unequal values is not
+// a false duplicate, it just degrades that bucket to O(k) probing.
 func (r *UniqueValues) validateHashKey(vs reflect.Value) error {
 	n := vs.Len()
 	isPtr := vs.Type().Elem().Kind() == reflect.Ptr
-	buckets := make(map[uint64][]int, n)
+	firstIdx := make(map[uint64]int, n)
+	var overflow map[uint64][]int
 	hw := newHasher()
 
 	for i := 0; i < n; i++ {
@@ -165,22 +171,40 @@ func (r *UniqueValues) validateHashKey(vs reflect.Value) error {
 		hashValue(&hw, v)
 		key := hw.state
 
-		if indices, ok := buckets[key]; ok {
-			curr := v.Interface()
-			for _, j := range indices {
-				prev := vs.Index(j)
-				if isPtr && !prev.IsNil() {
-					prev = prev.Elem()
-				}
+		j, seen := firstIdx[key]
+		if !seen {
+			firstIdx[key] = i
 
-				if reflect.DeepEqual(prev.Interface(), curr) {
-					return NewResult().WithError(NewValidationError(r.message))
-				}
+			continue
+		}
+
+		curr := v.Interface()
+		if r.equalAt(vs, j, curr, isPtr) {
+			return NewResult().WithError(NewValidationError(r.message))
+		}
+
+		for _, k := range overflow[key] {
+			if r.equalAt(vs, k, curr, isPtr) {
+				return NewResult().WithError(NewValidationError(r.message))
 			}
 		}
 
-		buckets[key] = append(buckets[key], i)
+		if overflow == nil {
+			overflow = make(map[uint64][]int)
+		}
+		overflow[key] = append(overflow[key], i)
 	}
 
 	return nil
+}
+
+// equalAt compares the element at index j against curr using DeepEqual,
+// dereferencing j's pointer when the slice element type is a pointer.
+func (r *UniqueValues) equalAt(vs reflect.Value, j int, curr any, isPtr bool) bool {
+	prev := vs.Index(j)
+	if isPtr && !prev.IsNil() {
+		prev = prev.Elem()
+	}
+
+	return reflect.DeepEqual(prev.Interface(), curr)
 }
