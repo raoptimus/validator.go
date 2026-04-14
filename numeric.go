@@ -26,9 +26,9 @@ func NewNumeric(minVal, maxVal float64) *Numeric {
 	return &Numeric{
 		minValue:          minVal,
 		maxValue:          maxVal,
-		notNumericMessage: "Value must be a numeric.",
-		tooBigMessage:     "Value must be no greater than {max}.",
-		tooSmallMessage:   "Value must be no less than {min}.",
+		notNumericMessage: MessageNotNumeric,
+		tooBigMessage:     MessageNumberTooBig,
+		tooSmallMessage:   MessageNumberTooSmall,
 	}
 }
 

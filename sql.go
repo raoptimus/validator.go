@@ -23,7 +23,7 @@ type SQL struct {
 
 func NewSQL() *SQL {
 	return &SQL{
-		message: "Value is invalid sql.",
+		message: MessageInvalidSQL,
 	}
 }
 

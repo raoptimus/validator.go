@@ -35,8 +35,8 @@ type UUID struct {
 
 func NewUUID() *UUID {
 	return &UUID{
-		message:               "Invalid UUID format.",
-		invalidVersionMessage: "UUID version must be equal to {version}.",
+		message:               MessageInvalidUUID,
+		invalidVersionMessage: MessageInvalidUUIDVersion,
 	}
 }
 

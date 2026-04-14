@@ -26,8 +26,8 @@ type Each struct {
 
 func NewEach(rules ...Rule) *Each {
 	return &Each{
-		message:               "Value is invalid",
-		incorrectInputMessage: "Value must be array",
+		message:               MessageInvalid,
+		incorrectInputMessage: MessageEachIncorrectInput,
 		rules:                 rules,
 		normalizeRulesEnabled: true,
 	}

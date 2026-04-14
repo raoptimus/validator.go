@@ -16,6 +16,6 @@ type MSISDN struct {
 func NewMSISDN() MSISDN {
 	return MSISDN{
 		MatchRegularExpression: NewMatchRegularExpression(msisdnRegexp).
-			WithMessage("MSISDN format is invalid."),
+			WithMessage(MessageInvalidMSISDN),
 	}
 }

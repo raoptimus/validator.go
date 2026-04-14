@@ -25,9 +25,9 @@ type IP struct {
 
 func NewIP() *IP {
 	return &IP{
-		message:               "Must be a valid IP address.",
-		ipv4NotAllowedMessage: "Must not be an IPv4 address.",
-		ipv6NotAllowedMessage: "Must not be an IPv6 address.",
+		message:               MessageInvalidIP,
+		ipv4NotAllowedMessage: MessageIPv4NotAllowed,
+		ipv6NotAllowedMessage: MessageIPv6NotAllowed,
 		allowV4:               true,
 		allowV6:               true,
 	}

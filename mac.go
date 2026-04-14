@@ -21,7 +21,7 @@ type MAC struct {
 
 func NewMAC() *MAC {
 	return &MAC{
-		message: "Must be a valid MAC address.",
+		message: MessageInvalidMAC,
 	}
 }
 

@@ -84,6 +84,96 @@ func TestSetTranslator_ChangesDefaultTranslator(t *testing.T) {
 	assert.Same(t, custom, DefaultTranslator)
 }
 
-func TestSetTranslator_DefaultTranslatorIsDummy(t *testing.T) {
-	assert.IsType(t, &DummyTranslator{}, DefaultTranslator)
+func TestSetTranslator_DefaultTranslatorIsCatalog(t *testing.T) {
+	assert.IsType(t, &CatalogTranslator{}, DefaultTranslator)
+}
+
+func TestCatalogTranslator_Translate_EN(t *testing.T) {
+	ctx := WithLanguage(context.Background(), LanguageEN)
+	result := DefaultTranslator.Translate(ctx, MessageRequired, nil)
+	assert.Equal(t, "Value cannot be blank.", result)
+}
+
+func TestCatalogTranslator_Translate_RU(t *testing.T) {
+	ctx := WithLanguage(context.Background(), LanguageRU)
+	result := DefaultTranslator.Translate(ctx, MessageRequired, nil)
+	assert.Equal(t, "Значение не должно быть пустым.", result)
+}
+
+func TestCatalogTranslator_Translate_RU_WithParams(t *testing.T) {
+	ctx := WithLanguage(context.Background(), LanguageRU)
+	params := map[string]any{"min": 3}
+	result := DefaultTranslator.Translate(ctx, MessageTooShort, params)
+	assert.Equal(t, "Значение должно содержать минимум 3 символов.", result)
+}
+
+func TestCatalogTranslator_Translate_FallbackToMessageID(t *testing.T) {
+	ctx := WithLanguage(context.Background(), Language("fr"))
+	result := DefaultTranslator.Translate(ctx, MessageRequired, nil)
+	assert.Equal(t, "Value cannot be blank.", result)
+}
+
+func TestCatalogTranslator_Translate_NoLanguageInContext(t *testing.T) {
+	ctx := context.Background()
+	result := DefaultTranslator.Translate(ctx, MessageRequired, nil)
+	assert.Equal(t, "Value cannot be blank.", result)
+}
+
+func TestTranslationCatalog_Register_CustomLanguage(t *testing.T) {
+	catalog := NewTranslationCatalog()
+	catalog.Register(Language("es"), map[string]string{
+		MessageRequired: "El valor no puede estar vacío.",
+	})
+
+	tr := NewCatalogTranslator(catalog)
+	ctx := WithLanguage(context.Background(), Language("es"))
+	result := tr.Translate(ctx, MessageRequired, nil)
+	assert.Equal(t, "El valor no puede estar vacío.", result)
+}
+
+func TestTranslationCatalog_Register_OverrideExisting(t *testing.T) {
+	catalog := NewTranslationCatalog()
+	catalog.Register(LanguageEN, map[string]string{
+		MessageRequired: "Field is required.",
+	})
+
+	tr := NewCatalogTranslator(catalog)
+	ctx := WithLanguage(context.Background(), LanguageEN)
+	result := tr.Translate(ctx, MessageRequired, nil)
+	assert.Equal(t, "Field is required.", result)
+}
+
+func TestTranslationCatalog_Missing(t *testing.T) {
+	catalog := NewTranslationCatalog()
+	catalog.Register(LanguageEN, map[string]string{
+		"msg1": "Message 1",
+		"msg2": "Message 2",
+		"msg3": "Message 3",
+	})
+	catalog.Register(Language("es"), map[string]string{
+		"msg1": "Mensaje 1",
+	})
+
+	missing := catalog.Missing(Language("es"))
+	assert.Len(t, missing, 2)
+	assert.Contains(t, missing, "msg2")
+	assert.Contains(t, missing, "msg3")
+}
+
+func TestTranslationCatalog_Missing_FullCoverage(t *testing.T) {
+	catalog := NewTranslationCatalog()
+	catalog.Register(LanguageEN, map[string]string{
+		"msg1": "Message 1",
+	})
+	catalog.Register(Language("de"), map[string]string{
+		"msg1": "Nachricht 1",
+	})
+
+	missing := catalog.Missing(Language("de"))
+	assert.Empty(t, missing)
+}
+
+func TestAllMessagesTranslated_RU(t *testing.T) {
+	missing := Translations.Missing(LanguageRU)
+	assert.Empty(t, missing, "missing RU translations: %v", missing)
 }

@@ -16,6 +16,6 @@ type HumanText struct {
 func NewHumanText() *HumanText {
 	return &HumanText{
 		MatchRegularExpression: NewMatchRegularExpression(humanRegexp).
-			WithMessage("This value must be a normal text."),
+			WithMessage(MessageInvalidHumanText),
 	}
 }

@@ -28,9 +28,9 @@ type StringLength struct {
 
 func NewStringLength(minLen, maxLen int) *StringLength {
 	return &StringLength{
-		message:         "This value must be a string.",
-		tooShortMessage: "This value should contain at least {min}.",
-		tooLongMessage:  "This value should contain at most {max}.",
+		message:         MessageStringType,
+		tooShortMessage: MessageTooShort,
+		tooLongMessage:  MessageTooLong,
 		minLength:       minLen,
 		maxLength:       maxLen,
 	}

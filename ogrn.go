@@ -36,9 +36,9 @@ type OGRN struct {
 
 func NewOGRN() *OGRN {
 	return &OGRN{
-		ogrnMessage:              "This value is not a valid OGRN.",
-		ogrnipMessage:            "This value is not a valid OGRNIP.",
-		invalidOGRNLengthMessage: "This value should contain either 13 or 15 characters.",
+		ogrnMessage:              MessageInvalidOGRN,
+		ogrnipMessage:            MessageInvalidOGRNIP,
+		invalidOGRNLengthMessage: MessageInvalidOGRNLength,
 	}
 }
 

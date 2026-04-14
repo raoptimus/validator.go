@@ -31,10 +31,10 @@ type Time struct {
 
 func NewTime() *Time {
 	return &Time{
-		message:         "Value is invalid",
-		formatMessage:   "Format of the time value must be equal {format}",
-		tooBigMessage:   "Time must be no greater than {max}.",
-		tooSmallMessage: "Time must be no less than {min}.",
+		message:         MessageInvalid,
+		formatMessage:   MessageTimeFormat,
+		tooBigMessage:   MessageTimeTooBig,
+		tooSmallMessage: MessageTimeTooSmall,
 		format:          time.RFC3339,
 		min:             nil,
 		max:             nil,
