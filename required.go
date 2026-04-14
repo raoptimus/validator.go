@@ -20,7 +20,7 @@ type Required struct {
 
 func NewRequired() *Required {
 	return &Required{
-		message: "Value cannot be blank.",
+		message: MessageRequired,
 	}
 }
 

@@ -23,7 +23,7 @@ type MatchRegularExpression struct {
 
 func NewMatchRegularExpression(pattern string) *MatchRegularExpression {
 	return &MatchRegularExpression{
-		message: "Value is invalid.",
+		message: MessageValueInvalid,
 		pattern: pattern,
 	}
 }

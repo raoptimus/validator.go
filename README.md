@@ -163,6 +163,72 @@ if err != nil {
 }
 ```
 
+### Multilanguage support
+
+Validation messages are translated automatically based on the language in context.
+Built-in languages: English (`en`, default) and Russian (`ru`).
+
+```go
+// Set language in context
+ctx := validator.WithLanguage(context.Background(), validator.LanguageRU)
+
+err := validator.ValidateValue(ctx, "", validator.NewRequired())
+// err.Error() == "Значение не должно быть пустым."
+```
+
+#### HTTP middleware example
+
+```go
+func LangMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        lang := r.Header.Get("Accept-Language") // "ru", "en", etc.
+        ctx := validator.WithLanguage(r.Context(), validator.Language(lang))
+        next.ServeHTTP(w, r.WithContext(ctx))
+    })
+}
+```
+
+Now any validator call inside the handler will use the language from the request:
+
+```go
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+    var req CreateRequest
+    // ... decode request body ...
+
+    // language is already in r.Context() from the middleware
+    err := validator.Validate(r.Context(), &req, validator.RuleSet{
+        "Name": {validator.NewRequired()},
+    })
+    // Accept-Language: ru → "Значение не должно быть пустым."
+    // Accept-Language: en → "Value cannot be blank."
+}
+```
+
+#### Register a custom language
+
+```go
+func init() {
+    validator.Translations.Register(validator.Language("es"), map[string]string{
+        validator.MessageRequired: "El valor no puede estar vacío.",
+        validator.MessageTooShort: "El valor debe contener al menos {min} caracteres.",
+        // ...
+    })
+}
+```
+
+#### Check for missing translations
+
+```go
+missing := validator.Translations.Missing(validator.Language("es"))
+// returns a list of message IDs without translation for the given language
+```
+
+#### Use DummyTranslator (no translation, placeholder replacement only)
+
+```go
+validator.SetTranslator(&validator.DummyTranslator{})
+```
+
 ## Available Rules
 
 | Rule | Description |

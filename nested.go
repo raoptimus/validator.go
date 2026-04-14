@@ -122,7 +122,7 @@ func (r *Nested) ValidateValue(ctx context.Context, value any) error {
 
 	if value == nil {
 		return NewResult().WithError(
-			NewValidationError(fmt.Sprintf("value should be a struct. %T given.", value)),
+			NewValidationError(fmt.Sprintf(MessageNestedNotStruct, value)),
 		)
 	}
 
@@ -152,7 +152,7 @@ func (r *Nested) ValidateValue(ctx context.Context, value any) error {
 
 	if vt.Kind() != reflect.Struct {
 		return NewResult().WithError(
-			NewValidationError(fmt.Sprintf("value should be a struct. %T given.", value)).
+			NewValidationError(fmt.Sprintf(MessageNestedNotStruct, value)).
 				WithParams(map[string]any{
 					"attribute": "", // todo: get attribute
 					"value":     value,

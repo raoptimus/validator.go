@@ -26,9 +26,9 @@ func NewNumber(minVal, maxVal int64) *Number {
 	return &Number{
 		minValue:         minVal,
 		maxValue:         maxVal,
-		notNumberMessage: "Value must be a number.",
-		tooBigMessage:    "Value must be no greater than {max}.",
-		tooSmallMessage:  "Value must be no less than {min}.",
+		notNumberMessage: MessageNotNumber,
+		tooBigMessage:    MessageNumberTooBig,
+		tooSmallMessage:  MessageNumberTooSmall,
 	}
 }
 

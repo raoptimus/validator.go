@@ -42,17 +42,17 @@ func NewCompare(targetValue any, targetAttribute, operator string) *Compare {
 
 	switch operator {
 	case OperatorEqual:
-		c.message = "Value must be equal to '{targetValueOrAttribute}'."
+		c.message = MessageCompareEqual
 	case OperatorNotEqual:
-		c.message = "Value must not be equal to '{targetValueOrAttribute}'."
+		c.message = MessageCompareNotEqual
 	case OperatorGreaterThan:
-		c.message = "Value must be greater than '{targetValueOrAttribute}'"
+		c.message = MessageCompareGreaterThan
 	case OperatorGreaterThanEqual:
-		c.message = "Value must be greater than or equal to '{targetValueOrAttribute}'"
+		c.message = MessageCompareGreaterThanEqual
 	case OperatorLessThan:
-		c.message = "Value must be less than '{targetValueOrAttribute}'"
+		c.message = MessageCompareLessThan
 	case OperatorLessThanEqual:
-		c.message = "Value must be less than or equal to '{targetValueOrAttribute}'"
+		c.message = MessageCompareLessThanEqual
 	default:
 		c.operatorIsValid = false
 	}

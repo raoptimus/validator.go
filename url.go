@@ -38,7 +38,7 @@ func NewURL() *URL {
 		pattern:      defaultURLRegexpPattern,
 		validSchemes: []string{"http", "https"},
 		enableIDN:    false,
-		message:      "This value is not a valid URL.",
+		message:      MessageInvalidURL,
 	}
 }
 
@@ -186,7 +186,7 @@ type DeepLinkURL struct {
 func NewDeepLinkURL() *DeepLinkURL {
 	return &DeepLinkURL{
 		invalidSchemes: []string{"http", "https", "ws"},
-		message:        "This value is not a valid deep link url.",
+		message:        MessageInvalidDeepLink,
 	}
 }
 

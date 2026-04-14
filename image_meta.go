@@ -40,9 +40,9 @@ type ImageMeta struct {
 
 func NewImageMeta() *ImageMeta {
 	return &ImageMeta{
-		message:                "This value must be a ImageMetaData struct.",
-		invalidMimeTypeMessage: "MimeType must be a equal one of [{mimeTypes}].",
-		tooLongSizeMessage:     "File size must be greater than {maxFileSizeBytes} bytes.",
+		message:                MessageInvalidImageMeta,
+		invalidMimeTypeMessage: MessageInvalidMimeType,
+		tooLongSizeMessage:     MessageFileTooLarge,
 		mimeTypes: []string{
 			ImageMimeTypeJPG,
 			ImageMimeTypePNG,

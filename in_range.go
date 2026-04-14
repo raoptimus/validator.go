@@ -20,7 +20,7 @@ type InRange struct {
 
 func NewInRange(rangeValues []any) *InRange {
 	return &InRange{
-		message:     "This value is invalid",
+		message:     MessageInRangeInvalid,
 		rangeValues: rangeValues,
 		not:         false,
 	}

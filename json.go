@@ -23,7 +23,7 @@ type JSON struct {
 
 func NewJSON() *JSON {
 	return &JSON{
-		message: "Must be a valid JSON",
+		message: MessageInvalidJSON,
 	}
 }
 

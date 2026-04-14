@@ -21,7 +21,7 @@ type UniqueValues struct {
 
 func NewUniqueValues() *UniqueValues {
 	return &UniqueValues{
-		message: "The list of values must be unique.",
+		message: MessageUniqueValues,
 	}
 }
 
