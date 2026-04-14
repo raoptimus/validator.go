@@ -97,7 +97,23 @@ func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {
 	// as a slice). A typed nil slice (var s []T = nil) has Kind == Slice
 	// and reaches the validation loops below with Len == 0, which passes
 	// as "trivially unique" — matches the empty-slice behavior.
-	if value == nil || reflect.TypeOf(value).Kind() != reflect.Slice {
+	if value == nil {
+		return NewResult().WithError(NewValidationError(r.message))
+	}
+
+	// Type-specialized fast paths skip reflection and the per-element
+	// any-boxing that map[any]struct{} forces. Covers the most common
+	// validator inputs; everything else falls through to reflect.
+	switch s := value.(type) {
+	case []string:
+		return uniquePrimitive(s, r.message)
+	case []int:
+		return uniquePrimitive(s, r.message)
+	case []int64:
+		return uniquePrimitive(s, r.message)
+	}
+
+	if reflect.TypeOf(value).Kind() != reflect.Slice {
 		return NewResult().WithError(NewValidationError(r.message))
 	}
 
@@ -106,7 +122,7 @@ func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {
 	// Determine the actual element type, dereferencing one pointer level
 	// to check comparability of the underlying struct, not the pointer.
 	elemType := vs.Type().Elem()
-	if elemType.Kind() == reflect.Ptr {
+	if elemType.Kind() == reflect.Pointer {
 		elemType = elemType.Elem()
 	}
 
@@ -117,12 +133,28 @@ func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {
 	return r.validateHashKey(vs)
 }
 
+// uniquePrimitive is a generic, allocation-minimal duplicate check for
+// slices of comparable primitives. Avoids both reflect and the per-element
+// any-boxing of validateComparable.
+func uniquePrimitive[T comparable](s []T, message string) error {
+	set := make(map[T]struct{}, len(s))
+	for _, v := range s {
+		if _, ok := set[v]; ok {
+			return NewResult().WithError(NewValidationError(message))
+		}
+
+		set[v] = struct{}{}
+	}
+
+	return nil
+}
+
 // validateComparable uses a hash map for O(n) duplicate detection.
 // Pointer elements are dereferenced so that two *T with equal fields
 // produce the same map key (the underlying value, not the address).
 func (r *UniqueValues) validateComparable(vs reflect.Value) error {
 	n := vs.Len()
-	isPtr := vs.Type().Elem().Kind() == reflect.Ptr
+	isPtr := vs.Type().Elem().Kind() == reflect.Pointer
 	set := make(map[any]struct{}, n)
 
 	for i := 0; i < n; i++ {
@@ -156,7 +188,7 @@ func (r *UniqueValues) validateComparable(vs reflect.Value) error {
 // a false duplicate, it just degrades that bucket to O(k) probing.
 func (r *UniqueValues) validateHashKey(vs reflect.Value) error {
 	n := vs.Len()
-	isPtr := vs.Type().Elem().Kind() == reflect.Ptr
+	isPtr := vs.Type().Elem().Kind() == reflect.Pointer
 	firstIdx := make(map[uint64]int, n)
 	var overflow map[uint64][]int
 	hw := newHasher()

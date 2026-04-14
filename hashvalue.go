@@ -101,7 +101,7 @@ func hashValueAt(hw *hasher, v reflect.Value, depth int) {
 		return
 	}
 
-	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+	for v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface {
 		if v.IsNil() {
 			hw.writeByte(tagNil)
 
@@ -191,7 +191,7 @@ func hashValueAt(hw *hasher, v reflect.Value, depth int) {
 
 	case reflect.Invalid,
 		reflect.Interface,
-		reflect.Ptr,
+		reflect.Pointer,
 		reflect.Chan,
 		reflect.Func,
 		reflect.UnsafePointer:
