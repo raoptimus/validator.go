@@ -9,15 +9,8 @@ package validator
 
 import (
 	"context"
-	"encoding/json"
 	"reflect"
 )
-
-// deepEqualSizeThreshold is the slice length at which non-comparable duplicate
-// detection switches from O(n²) reflect.DeepEqual to O(n) JSON-key hashing.
-// Benchmarked on structs with slice/map fields: DeepEqual wins below this size
-// due to zero per-comparison allocations; JSON wins above due to O(n) vs O(n²).
-const deepEqualSizeThreshold = 30
 
 type UniqueValues struct {
 	message   string
@@ -88,16 +81,27 @@ func (r *UniqueValues) setSkipOnError(v bool) {
 // so that two distinct pointers with equal values are detected as duplicates.
 //
 // The element type determines the comparison strategy:
-//   - Comparable types (primitives, fixed-size structs): O(n) hash map lookup.
-//   - Non-comparable types, small slices (≤ deepEqualSizeThreshold):
-//     O(n²) pairwise reflect.DeepEqual — zero per-comparison allocations.
-//   - Non-comparable types, large slices (> deepEqualSizeThreshold):
-//     O(n) JSON-serialized key hashing — avoids quadratic blowup.
+//   - Statically comparable types (primitives, fixed-size structs, pointers):
+//     O(n) hash map lookup via map[any]struct{}.
+//   - Everything else (structs with slice/map fields, interface slices):
+//     O(n) bucketed FNV-64a hash lookup with reflect.DeepEqual collision
+//     fallback — see validateHashKey.
+//
+// Interface-typed slices ([]any, []io.Reader, ...) deliberately skip the
+// comparable fast path: reflect.Type.Comparable reports true for interface
+// kinds because they are syntactically comparable, but the runtime hash
+// panics on non-comparable dynamic values. Routing them through the
+// bucketed-hash path handles any dynamic type correctly.
 func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {
-	vs := reflect.ValueOf(value)
-	if vs.Kind() != reflect.Slice {
+	// Untyped nil is rejected here (no type info means we cannot treat it
+	// as a slice). A typed nil slice (var s []T = nil) has Kind == Slice
+	// and reaches the validation loops below with Len == 0, which passes
+	// as "trivially unique" — matches the empty-slice behavior.
+	if value == nil || reflect.TypeOf(value).Kind() != reflect.Slice {
 		return NewResult().WithError(NewValidationError(r.message))
 	}
+
+	vs := reflect.ValueOf(value)
 
 	// Determine the actual element type, dereferencing one pointer level
 	// to check comparability of the underlying struct, not the pointer.
@@ -106,15 +110,11 @@ func (r *UniqueValues) ValidateValue(_ context.Context, value any) error {
 		elemType = elemType.Elem()
 	}
 
-	if elemType.Comparable() {
+	if elemType.Kind() != reflect.Interface && elemType.Comparable() {
 		return r.validateComparable(vs)
 	}
 
-	if vs.Len() > deepEqualSizeThreshold {
-		return r.validateJSONKey(vs)
-	}
-
-	return r.validateDeepEqual(vs)
+	return r.validateHashKey(vs)
 }
 
 // validateComparable uses a hash map for O(n) duplicate detection.
@@ -127,12 +127,11 @@ func (r *UniqueValues) validateComparable(vs reflect.Value) error {
 
 	for i := 0; i < n; i++ {
 		v := vs.Index(i)
-		key := v.Interface()
-
 		if isPtr && !v.IsNil() {
-			key = v.Elem().Interface()
+			v = v.Elem()
 		}
 
+		key := v.Interface()
 		if _, ok := set[key]; ok {
 			return NewResult().WithError(NewValidationError(r.message))
 		}
@@ -143,62 +142,44 @@ func (r *UniqueValues) validateComparable(vs reflect.Value) error {
 	return nil
 }
 
-// validateDeepEqual handles slices of non-comparable types (structs with
-// slice/map fields, e.g. protobuf messages). Uses O(n²) pairwise comparison
-// with reflect.DeepEqual instead of string serialization — this is cheaper
-// for small slices because DeepEqual short-circuits on first field mismatch
-// and allocates nothing per comparison.
-func (r *UniqueValues) validateDeepEqual(vs reflect.Value) error {
+// validateHashKey handles slices of non-comparable or interface-typed
+// elements using O(n) average-case bucketed hashing. Elements are grouped
+// into buckets by an FNV-64a hash of their field structure (see
+// hashvalue.go). Because a 64-bit hash cannot prove equality, any bucket
+// with more than one member is verified with reflect.DeepEqual — a hash
+// collision between unequal values is not a false duplicate, it just
+// degrades that bucket to O(k) DeepEqual probing per insert.
+func (r *UniqueValues) validateHashKey(vs reflect.Value) error {
 	n := vs.Len()
 	isPtr := vs.Type().Elem().Kind() == reflect.Ptr
-	seen := make([]any, 0, n)
+	buckets := make(map[uint64][]int, n)
+	hw := newHasher()
 
 	for i := 0; i < n; i++ {
 		v := vs.Index(i)
-		curr := v.Interface()
-
 		if isPtr && !v.IsNil() {
-			curr = v.Elem().Interface()
+			v = v.Elem()
 		}
 
-		for _, prev := range seen {
-			if reflect.DeepEqual(prev, curr) {
-				return NewResult().WithError(NewValidationError(r.message))
+		hw.reset()
+		hashValue(&hw, v)
+		key := hw.state
+
+		if indices, ok := buckets[key]; ok {
+			curr := v.Interface()
+			for _, j := range indices {
+				prev := vs.Index(j)
+				if isPtr && !prev.IsNil() {
+					prev = prev.Elem()
+				}
+
+				if reflect.DeepEqual(prev.Interface(), curr) {
+					return NewResult().WithError(NewValidationError(r.message))
+				}
 			}
 		}
 
-		seen = append(seen, curr)
-	}
-
-	return nil
-}
-
-// validateJSONKey handles large slices of non-comparable types using O(n)
-// JSON-serialized key hashing. Each element is marshaled to a deterministic
-// JSON string used as a map key for duplicate detection.
-func (r *UniqueValues) validateJSONKey(vs reflect.Value) error {
-	n := vs.Len()
-	isPtr := vs.Type().Elem().Kind() == reflect.Ptr
-	set := make(map[string]struct{}, n)
-
-	for i := 0; i < n; i++ {
-		v := vs.Index(i)
-		curr := v.Interface()
-
-		if isPtr && !v.IsNil() {
-			curr = v.Elem().Interface()
-		}
-
-		key, err := json.Marshal(curr)
-		if err != nil {
-			return NewResult().WithError(NewValidationError(r.message))
-		}
-
-		if _, ok := set[string(key)]; ok {
-			return NewResult().WithError(NewValidationError(r.message))
-		}
-
-		set[string(key)] = struct{}{}
+		buckets[key] = append(buckets[key], i)
 	}
 
 	return nil
