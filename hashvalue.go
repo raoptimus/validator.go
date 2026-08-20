@@ -3,6 +3,8 @@ package validator
 import (
 	"math"
 	"reflect"
+
+	"google.golang.org/protobuf/proto"
 )
 
 // Inlined FNV-64a constants. Using the raw state instead of hash.Hash64
@@ -27,6 +29,7 @@ const (
 	tagStructEnd
 	tagSlice
 	tagMap
+	tagProto
 )
 
 // hasher is a zero-alloc FNV-64a streaming hasher. Its output is only
@@ -70,6 +73,17 @@ func (hw *hasher) writeUint64(v uint64) {
 // writeString hoists hw.state into a local so the compiler can keep it in
 // a register across the loop. Through the pointer receiver it would be
 // reloaded on every iteration.
+// writeBytes absorbs b into the FNV-64a state. Same hoisting trick as
+// writeString, but without forcing a []byte → string conversion on the
+// caller (which would allocate).
+func (hw *hasher) writeBytes(b []byte) {
+	state := hw.state
+	for i := 0; i < len(b); i++ {
+		state = (state ^ uint64(b[i])) * fnvPrime64
+	}
+	hw.state = state
+}
+
 func (hw *hasher) writeString(s string) {
 	state := hw.state
 	for i := 0; i < len(s); i++ {
@@ -127,6 +141,10 @@ func hashValueAt(hw *hasher, v reflect.Value, depth int) {
 	if !v.IsValid() {
 		hw.writeByte(tagNil)
 
+		return
+	}
+
+	if hashProtoMessage(hw, v) {
 		return
 	}
 
@@ -215,4 +233,82 @@ func hashValueAt(hw *hasher, v reflect.Value, depth int) {
 		// to tagNil forces DeepEqual to verify any bucket collision.
 		hw.writeByte(tagNil)
 	}
+}
+
+// assignProto stores v as a protobuf message in dst and reports whether it
+// is one. Generated messages implement proto.Message on the pointer
+// receiver, while the unwrap loop in hashValueAt hands us the dereferenced
+// struct — hence the second attempt through the addressable form, which is
+// what an element of a slice of messages ([]*T) looks like at this point.
+//
+// The message is handed back through a pointer argument rather than a
+// return value so the helper does not hand out an interface.
+func assignProto(dst *proto.Message, v reflect.Value) bool {
+	if v.CanInterface() {
+		if m, ok := v.Interface().(proto.Message); ok {
+			*dst = m
+
+			return true
+		}
+	}
+
+	if v.CanAddr() && v.Addr().CanInterface() {
+		if m, ok := v.Addr().Interface().(proto.Message); ok {
+			*dst = m
+
+			return true
+		}
+	}
+
+	return false
+}
+
+// hashProtoMessage hashes a protobuf message by its deterministic wire
+// encoding and reports whether it handled v.
+//
+// Walking a generated message field by field is not an option: its
+// unexported state holds a live *MessageInfo once anything has touched the
+// message through reflection (a logging interceptor, protojson, any
+// ProtoReflect call). From there the walk reaches the message descriptor,
+// the file descriptor, every message of that file and its imports — a
+// densely connected graph whose path count explodes long before
+// maxHashDepth is reached. The wire encoding, by contrast, covers exactly
+// the data the message carries, and carries it in a stable field order.
+//
+// Equality still comes from protoEqual in the collision path: the encoding
+// is a bucket key, and messages of different types can encode to the same
+// bytes.
+func hashProtoMessage(hw *hasher, v reflect.Value) bool {
+	var m proto.Message
+	if !assignProto(&m, v) {
+		return false
+	}
+
+	hw.writeByte(tagProto)
+
+	b, err := proto.MarshalOptions{Deterministic: true}.Marshal(m)
+	if err != nil {
+		// A message that cannot be encoded (a broken required field, a
+		// cyclic Any) collapses to the bare tag: same bucket for every such
+		// value, correctness restored by the equality check.
+		return true
+	}
+
+	hw.writeUint64(uint64(len(b)))
+	hw.writeBytes(b)
+
+	return true
+}
+
+// protoEqual compares two values as protobuf messages, reporting whether
+// both of them are messages at all. proto.Equal compares the data a
+// message carries; reflect.DeepEqual would also compare the unexported
+// state protobuf fills in lazily.
+func protoEqual(a, b reflect.Value) (equal, ok bool) {
+	var am, bm proto.Message
+	if !assignProto(&am, a) || !assignProto(&bm, b) {
+		return false, false
+	}
+
+	return proto.Equal(am, bm), true
 }
