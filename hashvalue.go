@@ -78,11 +78,13 @@ func (hw *hasher) writeString(s string) {
 	hw.state = state
 }
 
-// maxHashDepth caps recursion so cyclic graphs (a map containing itself,
-// a struct linked to itself via a pointer) cannot stack-overflow. Any
-// subtree past the cap collapses to tagNil — a bucket-key collision that
-// reflect.DeepEqual still resolves correctly in validateHashKey, at the
-// cost of degraded bucketing for pathologically deep inputs.
+// maxHashDepth caps both recursion and pointer/interface unwrapping so
+// cyclic graphs (a map containing itself, a struct linked to itself via a
+// pointer, an interface holding its own address) can neither stack-overflow
+// nor spin forever. Any subtree past the cap collapses to tagNil — a
+// bucket-key collision that reflect.DeepEqual still resolves correctly in
+// validateHashKey, at the cost of degraded bucketing for pathologically
+// deep inputs.
 const maxHashDepth = 256
 
 // hashValue streams v into hw by walking its structure via reflection.
@@ -101,8 +103,19 @@ func hashValueAt(hw *hasher, v reflect.Value, depth int) {
 		return
 	}
 
+	// Each unwrapping step counts towards depth just like a nesting level.
+	// Without it a self-referential value (an interface holding a pointer to
+	// itself) keeps this loop spinning forever: the kind stays Interface or
+	// Pointer, nothing is ever nil, and maxHashDepth is never consulted.
 	for v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface {
 		if v.IsNil() {
+			hw.writeByte(tagNil)
+
+			return
+		}
+
+		depth++
+		if depth > maxHashDepth {
 			hw.writeByte(tagNil)
 
 			return
