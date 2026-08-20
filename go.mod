@@ -8,6 +8,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	golang.org/x/net v0.53.0
+	google.golang.org/protobuf v1.36.12
 )
 
 require (

@@ -233,13 +233,12 @@ func (r *UniqueValues) validateHashKey(vs reflect.Value) error {
 			continue
 		}
 
-		curr := v.Interface()
-		if r.equalAt(vs, j, curr, isPtr) {
+		if r.equalAt(vs, j, v, isPtr) {
 			return NewResult().WithError(NewValidationError(r.message))
 		}
 
 		for _, k := range overflow[key] {
-			if r.equalAt(vs, k, curr, isPtr) {
+			if r.equalAt(vs, k, v, isPtr) {
 				return NewResult().WithError(NewValidationError(r.message))
 			}
 		}
@@ -253,13 +252,23 @@ func (r *UniqueValues) validateHashKey(vs reflect.Value) error {
 	return nil
 }
 
-// equalAt compares the element at index j against curr using DeepEqual,
-// dereferencing j's pointer when the slice element type is a pointer.
-func (r *UniqueValues) equalAt(vs reflect.Value, j int, curr any, isPtr bool) bool {
+// equalAt compares the element at index j against curr, dereferencing j's
+// pointer when the slice element type is a pointer.
+//
+// Protobuf messages go through proto.Equal: reflect.DeepEqual would also
+// compare their unexported state, which holds a *MessageInfo only after
+// something has touched the message through reflection — two messages
+// carrying identical data would then be reported as distinct depending on
+// whether they had been logged or serialized on the way in.
+func (r *UniqueValues) equalAt(vs reflect.Value, j int, curr reflect.Value, isPtr bool) bool {
 	prev := vs.Index(j)
 	if isPtr && !prev.IsNil() {
 		prev = prev.Elem()
 	}
 
-	return reflect.DeepEqual(prev.Interface(), curr)
+	if equal, ok := protoEqual(prev, curr); ok {
+		return equal
+	}
+
+	return reflect.DeepEqual(prev.Interface(), curr.Interface())
 }
