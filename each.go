@@ -12,13 +12,14 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+	"sync"
 )
 
 type Each struct {
 	message               string
 	incorrectInputMessage string
 	rules                 Rules
-	normalizeRulesEnabled bool
+	normalizeOnce         *sync.Once
 	whenFunc              WhenFunc
 	skipEmpty             bool
 	skipError             bool
@@ -29,7 +30,7 @@ func NewEach(rules ...Rule) *Each {
 		message:               MessageInvalid,
 		incorrectInputMessage: MessageEachIncorrectInput,
 		rules:                 rules,
-		normalizeRulesEnabled: true,
+		normalizeOnce:         &sync.Once{},
 	}
 }
 
@@ -136,24 +137,21 @@ func (r *Each) ValidateValue(ctx context.Context, value any) error {
 }
 
 func (r *Each) normalizeRules() {
-	if !r.normalizeRulesEnabled {
-		return
-	}
-	r.normalizeRulesEnabled = false
+	r.normalizeOnce.Do(func() {
+		for i, rule := range r.rules {
+			if rse, ok := rule.(RuleSkipEmpty); ok {
+				rse.setSkipOnEmpty(r.skipEmpty)
+			}
 
-	for i, rule := range r.rules {
-		if rse, ok := rule.(RuleSkipEmpty); ok {
-			rse.setSkipOnEmpty(r.skipEmpty)
+			if rser, ok := rule.(RuleSkipError); ok {
+				rser.setSkipOnError(r.skipError)
+			}
+
+			if rw, ok := rule.(RuleWhen); ok {
+				rw.setWhen(r.whenFunc)
+			}
+
+			r.rules[i] = rule
 		}
-
-		if rser, ok := rule.(RuleSkipError); ok {
-			rser.setSkipOnError(r.skipError)
-		}
-
-		if rw, ok := rule.(RuleWhen); ok {
-			rw.setWhen(r.whenFunc)
-		}
-
-		r.rules[i] = rule
-	}
+	})
 }
