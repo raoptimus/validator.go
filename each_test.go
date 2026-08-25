@@ -9,6 +9,7 @@ package validator
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,6 +19,21 @@ func TestEach_ValidateValue_FirstValueIs1_NoError(t *testing.T) {
 	ctx := context.Background()
 	err := NewEach(NewNumber(1, 2)).ValidateValue(ctx, []int{1})
 	assert.NoError(t, err)
+}
+
+func TestEach_ValidateValue_ConcurrentCalls_NoError(t *testing.T) {
+	rule := NewEach(NewNumber(1, 2))
+
+	var wg sync.WaitGroup
+	for range 100 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			assert.NoError(t, rule.ValidateValue(context.Background(), []int{1}))
+		}()
+	}
+	wg.Wait()
 }
 
 func TestEach_ValidateValue_FirstValueIs0_Error(t *testing.T) {
