@@ -12,14 +12,12 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
-	"sync"
 )
 
 type Each struct {
 	message               string
 	incorrectInputMessage string
 	rules                 Rules
-	normalizeOnce         *sync.Once
 	whenFunc              WhenFunc
 	skipEmpty             bool
 	skipError             bool
@@ -30,7 +28,6 @@ func NewEach(rules ...Rule) *Each {
 		message:               MessageInvalid,
 		incorrectInputMessage: MessageEachIncorrectInput,
 		rules:                 rules,
-		normalizeOnce:         &sync.Once{},
 	}
 }
 
@@ -93,8 +90,6 @@ func (r *Each) setSkipOnError(v bool) {
 }
 
 func (r *Each) ValidateValue(ctx context.Context, value any) error {
-	r.normalizeRules()
-
 	result := NewResult()
 	if value == nil || reflect.TypeOf(value).Kind() != reflect.Slice {
 		return result.WithError(
@@ -134,24 +129,4 @@ func (r *Each) ValidateValue(ctx context.Context, value any) error {
 	}
 
 	return result
-}
-
-func (r *Each) normalizeRules() {
-	r.normalizeOnce.Do(func() {
-		for i, rule := range r.rules {
-			if rse, ok := rule.(RuleSkipEmpty); ok {
-				rse.setSkipOnEmpty(r.skipEmpty)
-			}
-
-			if rser, ok := rule.(RuleSkipError); ok {
-				rser.setSkipOnError(r.skipError)
-			}
-
-			if rw, ok := rule.(RuleWhen); ok {
-				rw.setWhen(r.whenFunc)
-			}
-
-			r.rules[i] = rule
-		}
-	})
 }

@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEach_ValidateValue_FirstValueIs1_NoError(t *testing.T) {
@@ -34,6 +35,50 @@ func TestEach_ValidateValue_ConcurrentCalls_NoError(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+}
+
+func TestEach_ValidateValue_SharedNestedConcurrentCalls_NoError(t *testing.T) {
+	t.Parallel()
+
+	type item struct {
+		Value string
+	}
+
+	sharedRule := NewNested(RuleSet{
+		"Value": {NewRequired()},
+	})
+
+	const workers = 100
+	ctx := t.Context()
+	start := make(chan struct{})
+	errs := make(chan error, workers)
+
+	var wg sync.WaitGroup
+	for range workers {
+		rule := NewEach(sharedRule).SkipOnEmpty()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			errs <- rule.ValidateValue(ctx, []item{{Value: "value"}})
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		require.NoError(t, err)
+	}
+}
+
+func TestEach_ValidateValue_ChildSkipOnEmptyPreserved_NoError(t *testing.T) {
+	t.Parallel()
+
+	rule := NewEach(NewStringLength(1, 2).SkipOnEmpty())
+
+	require.NoError(t, rule.ValidateValue(t.Context(), []string{""}))
 }
 
 func TestEach_ValidateValue_FirstValueIs0_Error(t *testing.T) {
