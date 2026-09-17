@@ -205,13 +205,9 @@ type ruleOverrides struct {
 	skipError bool
 }
 
-type ruleOverridesValidator interface {
-	validateValue(ctx context.Context, value any, overrides *ruleOverrides) error
-}
-
 func validateRule(ctx context.Context, value any, r Rule, overrides *ruleOverrides) error {
-	if rv, ok := r.(ruleOverridesValidator); ok {
-		return rv.validateValue(ctx, value, overrides)
+	if each, ok := r.(*Each); ok {
+		return each.validateValue(ctx, value, overrides)
 	}
 
 	return r.ValidateValue(ctx, value)
