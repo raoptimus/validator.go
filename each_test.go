@@ -102,6 +102,12 @@ func TestEach_ValidateValue_OptionsApplyToElements_NoError(t *testing.T) {
 			}),
 			value: []string{""},
 		},
+		{
+			name:  "nested each skip on empty",
+			ctx:   t.Context(),
+			rule:  NewEach(NewEach(NewStringLength(1, 2))).SkipOnEmpty(),
+			value: [][]string{{""}},
+		},
 	}
 
 	for _, tt := range tests {

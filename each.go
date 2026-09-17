@@ -90,6 +90,10 @@ func (r *Each) setSkipOnError(v bool) {
 }
 
 func (r *Each) ValidateValue(ctx context.Context, value any) error {
+	return r.validateValue(ctx, value, nil)
+}
+
+func (r *Each) validateValue(ctx context.Context, value any, overrides *ruleOverrides) error {
 	result := NewResult()
 	if value == nil || reflect.TypeOf(value).Kind() != reflect.Slice {
 		return result.WithError(
@@ -101,10 +105,12 @@ func (r *Each) ValidateValue(ctx context.Context, value any) error {
 		)
 	}
 
-	overrides := &ruleOverrides{
-		whenFunc:  r.whenFunc,
-		skipEmpty: r.skipEmpty,
-		skipError: r.skipError,
+	if overrides == nil {
+		overrides = &ruleOverrides{
+			whenFunc:  r.whenFunc,
+			skipEmpty: r.skipEmpty,
+			skipError: r.skipError,
+		}
 	}
 	vs := reflect.ValueOf(value)
 	for i := 0; i < vs.Len(); i++ {

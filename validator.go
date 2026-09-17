@@ -43,7 +43,7 @@ func validateValue(ctx context.Context, value any, overrides *ruleOverrides, rul
 			continue
 		}
 
-		if err := r.ValidateValue(ctx, value); err != nil {
+		if err := validateRule(ctx, value, r, overrides); err != nil {
 			var errRes Result
 			if errors.As(err, &errRes) {
 				result = result.WithError(errRes.Errors()...)
@@ -203,6 +203,18 @@ type ruleOverrides struct {
 	whenFunc  WhenFunc
 	skipEmpty bool
 	skipError bool
+}
+
+type ruleOverridesValidator interface {
+	validateValue(ctx context.Context, value any, overrides *ruleOverrides) error
+}
+
+func validateRule(ctx context.Context, value any, r Rule, overrides *ruleOverrides) error {
+	if rv, ok := r.(ruleOverridesValidator); ok {
+		return rv.validateValue(ctx, value, overrides)
+	}
+
+	return r.ValidateValue(ctx, value)
 }
 
 func isSkipValidate(ctx context.Context, value any, r Rule, overrides *ruleOverrides) bool {
