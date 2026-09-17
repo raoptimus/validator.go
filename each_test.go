@@ -73,12 +73,42 @@ func TestEach_ValidateValue_SharedNestedConcurrentCalls_NoError(t *testing.T) {
 	}
 }
 
-func TestEach_ValidateValue_ChildSkipOnEmptyPreserved_NoError(t *testing.T) {
+func TestEach_ValidateValue_OptionsApplyToElements_NoError(t *testing.T) {
 	t.Parallel()
 
-	rule := NewEach(NewStringLength(1, 2).SkipOnEmpty())
+	tests := []struct {
+		name  string
+		ctx   context.Context
+		rule  *Each
+		value any
+	}{
+		{
+			name:  "skip on empty",
+			ctx:   t.Context(),
+			rule:  NewEach(NewStringLength(1, 2)).SkipOnEmpty(),
+			value: []string{""},
+		},
+		{
+			name:  "skip on error",
+			ctx:   withPreviousRulesErrored(t.Context()),
+			rule:  NewEach(NewRequired()).SkipOnError(),
+			value: []string{""},
+		},
+		{
+			name: "when false",
+			ctx:  t.Context(),
+			rule: NewEach(NewRequired()).When(func(_ context.Context, _ any) bool {
+				return false
+			}),
+			value: []string{""},
+		},
+	}
 
-	require.NoError(t, rule.ValidateValue(t.Context(), []string{""}))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, tt.rule.ValidateValue(tt.ctx, tt.value))
+		})
+	}
 }
 
 func TestEach_ValidateValue_FirstValueIs0_Error(t *testing.T) {

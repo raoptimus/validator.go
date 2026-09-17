@@ -17,6 +17,10 @@ import (
 )
 
 func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
+	return validateValue(ctx, value, nil, rules...)
+}
+
+func validateValue(ctx context.Context, value any, overrides *ruleOverrides, rules ...Rule) error {
 	if len(rules) == 0 {
 		return nil
 	}
@@ -35,7 +39,7 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 	result := NewResult()
 
 	for _, r := range rules {
-		if isSkipValidate(ctx, value, r) {
+		if isSkipValidate(ctx, value, r, overrides) {
 			continue
 		}
 
@@ -91,7 +95,7 @@ func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 		fieldRules = normalizeRules(fieldRules)
 
 		for _, validatorRule := range fieldRules {
-			if isSkipValidate(ctx, fieldValue, validatorRule) {
+			if isSkipValidate(ctx, fieldValue, validatorRule, nil) {
 				continue
 			}
 
@@ -195,21 +199,40 @@ func normalizeRules(rules []Rule) []Rule {
 	return rules
 }
 
-func isSkipValidate(ctx context.Context, value any, r Rule) bool {
+type ruleOverrides struct {
+	whenFunc  WhenFunc
+	skipEmpty bool
+	skipError bool
+}
+
+func isSkipValidate(ctx context.Context, value any, r Rule, overrides *ruleOverrides) bool {
 	if rse, ok := r.(RuleSkipEmpty); ok {
-		if rse.skipOnEmpty() && valueIsEmpty(reflect.ValueOf(value)) {
+		skipEmpty := rse.skipOnEmpty()
+		if overrides != nil {
+			skipEmpty = overrides.skipEmpty
+		}
+		if skipEmpty && valueIsEmpty(reflect.ValueOf(value)) {
 			return true
 		}
 	}
 
 	if rser, ok := r.(RuleSkipError); ok {
-		if rser.shouldSkipOnError() && previousRulesErrored(ctx) {
+		skipError := rser.shouldSkipOnError()
+		if overrides != nil {
+			skipError = overrides.skipError
+		}
+		if skipError && previousRulesErrored(ctx) {
 			return true
 		}
 	}
 
 	if rw, ok := r.(RuleWhen); ok {
-		return rw.when() != nil && !rw.when()(ctx, value)
+		whenFunc := rw.when()
+		if overrides != nil {
+			whenFunc = overrides.whenFunc
+		}
+
+		return whenFunc != nil && !whenFunc(ctx, value)
 	}
 
 	return false

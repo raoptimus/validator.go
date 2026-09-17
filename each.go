@@ -101,11 +101,16 @@ func (r *Each) ValidateValue(ctx context.Context, value any) error {
 		)
 	}
 
+	overrides := &ruleOverrides{
+		whenFunc:  r.whenFunc,
+		skipEmpty: r.skipEmpty,
+		skipError: r.skipError,
+	}
 	vs := reflect.ValueOf(value)
 	for i := 0; i < vs.Len(); i++ {
 		v := vs.Index(i).Interface()
 
-		if err := ValidateValue(ctx, v, r.rules...); err != nil {
+		if err := validateValue(ctx, v, overrides, r.rules...); err != nil {
 			var r Result
 			if errors.As(err, &r) {
 				for _, err := range r.Errors() {
