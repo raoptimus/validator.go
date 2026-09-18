@@ -90,7 +90,11 @@ func (r *Each) setSkipOnError(v bool) {
 }
 
 func (r *Each) ValidateValue(ctx context.Context, value any) error {
-	return r.validateValue(ctx, value, nil)
+	return r.validateValue(ctx, value, eachOverridesFromContext(ctx, r))
+}
+
+func (r *Each) unwrapEach() *Each {
+	return r
 }
 
 func (r *Each) validateValue(ctx context.Context, value any, overrides *ruleOverrides) error {

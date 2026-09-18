@@ -26,6 +26,22 @@ func (*externalEach) ValidateValue(context.Context, any) error {
 	return errExternalValidateValue
 }
 
+type delegatingEach struct {
+	*validator.Each
+}
+
+func (r *delegatingEach) ValidateValue(ctx context.Context, value any) error {
+	return r.Each.ValidateValue(ctx, value)
+}
+
+func TestEach_ExternalDelegatingEachWrapperPropagatesOptions(t *testing.T) {
+	rule := &delegatingEach{Each: validator.NewEach(validator.NewStringLength(1, 2))}
+
+	err := validator.NewEach(rule).SkipOnEmpty().ValidateValue(t.Context(), [][]string{{""}})
+
+	require.NoError(t, err)
+}
+
 func TestValidateValue_ExternalEachWrapperUsesPublicValidateValue(t *testing.T) {
 	rule := &externalEach{Each: validator.NewEach()}
 

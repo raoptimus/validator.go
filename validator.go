@@ -205,9 +205,48 @@ type ruleOverrides struct {
 	skipError bool
 }
 
+type eachUnwrapper interface {
+	unwrapEach() *Each
+}
+
+type eachOverridesContextKey struct{}
+
+type eachOverridesContextValue struct {
+	each      *Each
+	overrides *ruleOverrides
+}
+
+func contextWithEachOverrides(ctx context.Context, each *Each, overrides *ruleOverrides) context.Context {
+	return context.WithValue(ctx, eachOverridesContextKey{}, eachOverridesContextValue{
+		each:      each,
+		overrides: overrides,
+	})
+}
+
+func eachOverridesFromContext(ctx context.Context, each *Each) *ruleOverrides {
+	if ctx == nil {
+		return nil
+	}
+
+	value, ok := ctx.Value(eachOverridesContextKey{}).(eachOverridesContextValue)
+	if !ok || value.each != each {
+		return nil
+	}
+
+	return value.overrides
+}
+
 func validateRule(ctx context.Context, value any, r Rule, overrides *ruleOverrides) error {
 	if each, ok := r.(*Each); ok {
+		if overrides == nil {
+			overrides = eachOverridesFromContext(ctx, each)
+		}
+
 		return each.validateValue(ctx, value, overrides)
+	}
+
+	if each, ok := r.(eachUnwrapper); ok && overrides != nil {
+		ctx = contextWithEachOverrides(ctx, each.unwrapEach(), overrides)
 	}
 
 	return r.ValidateValue(ctx, value)
