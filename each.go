@@ -92,14 +92,14 @@ func (r *Each) setSkipOnError(v bool) {
 func (r *Each) ValidateValue(ctx context.Context, value any) error {
 	inheritedOptions := eachOptionsFromContext(ctx, r)
 
-	return r.validateElements(ctx, value, inheritedOptions)
+	return r.validateValue(ctx, value, inheritedOptions)
 }
 
 func (r *Each) unwrapEach() *Each {
 	return r
 }
 
-func (r *Each) validateElements(ctx context.Context, value any, inheritedOptions *ruleOptions) error {
+func (r *Each) validateValue(ctx context.Context, value any, inheritedOptions *ruleOptions) error {
 	result := NewResult()
 	if value == nil || reflect.TypeOf(value).Kind() != reflect.Slice {
 		return result.WithError(

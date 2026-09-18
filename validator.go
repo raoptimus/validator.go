@@ -242,7 +242,7 @@ func validateRule(ctx context.Context, value any, r Rule, options *ruleOptions) 
 			options = eachOptionsFromContext(ctx, each)
 		}
 
-		return each.validateElements(ctx, value, options)
+		return each.validateValue(ctx, value, options)
 	}
 
 	if each, ok := r.(eachUnwrapper); ok && options != nil {
