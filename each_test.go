@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEach_ValidateValue_FirstValueIs1_NoError(t *testing.T) {
@@ -34,6 +35,86 @@ func TestEach_ValidateValue_ConcurrentCalls_NoError(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+}
+
+func TestEach_ValidateValue_SharedNestedConcurrentCalls_NoError(t *testing.T) {
+	t.Parallel()
+
+	type item struct {
+		Value string
+	}
+
+	sharedRule := NewNested(RuleSet{
+		"Value": {NewRequired()},
+	})
+
+	const workers = 100
+	ctx := t.Context()
+	start := make(chan struct{})
+	errs := make(chan error, workers)
+
+	var wg sync.WaitGroup
+	for range workers {
+		rule := NewEach(sharedRule).SkipOnEmpty()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			errs <- rule.ValidateValue(ctx, []item{{Value: "value"}})
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		require.NoError(t, err)
+	}
+}
+
+func TestEach_ValidateValue_OptionsApplyToElements_NoError(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		ctx   context.Context
+		rule  *Each
+		value any
+	}{
+		{
+			name:  "skip on empty",
+			ctx:   t.Context(),
+			rule:  NewEach(NewStringLength(1, 2)).SkipOnEmpty(),
+			value: []string{""},
+		},
+		{
+			name:  "skip on error",
+			ctx:   withPreviousRulesErrored(t.Context()),
+			rule:  NewEach(NewRequired()).SkipOnError(),
+			value: []string{""},
+		},
+		{
+			name: "when false",
+			ctx:  t.Context(),
+			rule: NewEach(NewRequired()).When(func(_ context.Context, _ any) bool {
+				return false
+			}),
+			value: []string{""},
+		},
+		{
+			name:  "nested each skip on empty",
+			ctx:   t.Context(),
+			rule:  NewEach(NewEach(NewStringLength(1, 2))).SkipOnEmpty(),
+			value: [][]string{{""}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, tt.rule.ValidateValue(tt.ctx, tt.value))
+		})
+	}
 }
 
 func TestEach_ValidateValue_FirstValueIs0_Error(t *testing.T) {
