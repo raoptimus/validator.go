@@ -17,10 +17,10 @@ import (
 )
 
 func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
-	return validateValue(ctx, value, nil, rules...)
+	return validateRules(ctx, value, nil, rules...)
 }
 
-func validateValue(ctx context.Context, value any, overrides *ruleOverrides, rules ...Rule) error {
+func validateRules(ctx context.Context, value any, options *ruleOptions, rules ...Rule) error {
 	if len(rules) == 0 {
 		return nil
 	}
@@ -39,11 +39,11 @@ func validateValue(ctx context.Context, value any, overrides *ruleOverrides, rul
 	result := NewResult()
 
 	for _, r := range rules {
-		if isSkipValidate(ctx, value, r, overrides) {
+		if isSkipValidate(ctx, value, r, options) {
 			continue
 		}
 
-		if err := validateRule(ctx, value, r, overrides); err != nil {
+		if err := validateRule(ctx, value, r, options); err != nil {
 			var errRes Result
 			if errors.As(err, &errRes) {
 				result = result.WithError(errRes.Errors()...)
@@ -199,7 +199,7 @@ func normalizeRules(rules []Rule) []Rule {
 	return rules
 }
 
-type ruleOverrides struct {
+type ruleOptions struct {
 	whenFunc  WhenFunc
 	skipEmpty bool
 	skipError bool
@@ -209,54 +209,54 @@ type eachUnwrapper interface {
 	unwrapEach() *Each
 }
 
-type eachOverridesContextKey struct{}
+type eachOptionsContextKey struct{}
 
-type eachOverridesContextValue struct {
-	each      *Each
-	overrides *ruleOverrides
+type eachOptionsContextValue struct {
+	each    *Each
+	options *ruleOptions
 }
 
-func contextWithEachOverrides(ctx context.Context, each *Each, overrides *ruleOverrides) context.Context {
-	return context.WithValue(ctx, eachOverridesContextKey{}, eachOverridesContextValue{
-		each:      each,
-		overrides: overrides,
+func contextWithEachOptions(ctx context.Context, each *Each, options *ruleOptions) context.Context {
+	return context.WithValue(ctx, eachOptionsContextKey{}, eachOptionsContextValue{
+		each:    each,
+		options: options,
 	})
 }
 
-func eachOverridesFromContext(ctx context.Context, each *Each) *ruleOverrides {
+func eachOptionsFromContext(ctx context.Context, each *Each) *ruleOptions {
 	if ctx == nil {
 		return nil
 	}
 
-	value, ok := ctx.Value(eachOverridesContextKey{}).(eachOverridesContextValue)
+	value, ok := ctx.Value(eachOptionsContextKey{}).(eachOptionsContextValue)
 	if !ok || value.each != each {
 		return nil
 	}
 
-	return value.overrides
+	return value.options
 }
 
-func validateRule(ctx context.Context, value any, r Rule, overrides *ruleOverrides) error {
+func validateRule(ctx context.Context, value any, r Rule, options *ruleOptions) error {
 	if each, ok := r.(*Each); ok {
-		if overrides == nil {
-			overrides = eachOverridesFromContext(ctx, each)
+		if options == nil {
+			options = eachOptionsFromContext(ctx, each)
 		}
 
-		return each.validateValue(ctx, value, overrides)
+		return each.validateElements(ctx, value, options)
 	}
 
-	if each, ok := r.(eachUnwrapper); ok && overrides != nil {
-		ctx = contextWithEachOverrides(ctx, each.unwrapEach(), overrides)
+	if each, ok := r.(eachUnwrapper); ok && options != nil {
+		ctx = contextWithEachOptions(ctx, each.unwrapEach(), options)
 	}
 
 	return r.ValidateValue(ctx, value)
 }
 
-func isSkipValidate(ctx context.Context, value any, r Rule, overrides *ruleOverrides) bool {
+func isSkipValidate(ctx context.Context, value any, r Rule, options *ruleOptions) bool {
 	if rse, ok := r.(RuleSkipEmpty); ok {
 		skipEmpty := rse.skipOnEmpty()
-		if overrides != nil {
-			skipEmpty = overrides.skipEmpty
+		if options != nil {
+			skipEmpty = options.skipEmpty
 		}
 		if skipEmpty && valueIsEmpty(reflect.ValueOf(value)) {
 			return true
@@ -265,8 +265,8 @@ func isSkipValidate(ctx context.Context, value any, r Rule, overrides *ruleOverr
 
 	if rser, ok := r.(RuleSkipError); ok {
 		skipError := rser.shouldSkipOnError()
-		if overrides != nil {
-			skipError = overrides.skipError
+		if options != nil {
+			skipError = options.skipError
 		}
 		if skipError && previousRulesErrored(ctx) {
 			return true
@@ -275,8 +275,8 @@ func isSkipValidate(ctx context.Context, value any, r Rule, overrides *ruleOverr
 
 	if rw, ok := r.(RuleWhen); ok {
 		whenFunc := rw.when()
-		if overrides != nil {
-			whenFunc = overrides.whenFunc
+		if options != nil {
+			whenFunc = options.whenFunc
 		}
 
 		return whenFunc != nil && !whenFunc(ctx, value)

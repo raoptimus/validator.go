@@ -90,14 +90,16 @@ func (r *Each) setSkipOnError(v bool) {
 }
 
 func (r *Each) ValidateValue(ctx context.Context, value any) error {
-	return r.validateValue(ctx, value, eachOverridesFromContext(ctx, r))
+	inheritedOptions := eachOptionsFromContext(ctx, r)
+
+	return r.validateElements(ctx, value, inheritedOptions)
 }
 
 func (r *Each) unwrapEach() *Each {
 	return r
 }
 
-func (r *Each) validateValue(ctx context.Context, value any, overrides *ruleOverrides) error {
+func (r *Each) validateElements(ctx context.Context, value any, inheritedOptions *ruleOptions) error {
 	result := NewResult()
 	if value == nil || reflect.TypeOf(value).Kind() != reflect.Slice {
 		return result.WithError(
@@ -109,8 +111,9 @@ func (r *Each) validateValue(ctx context.Context, value any, overrides *ruleOver
 		)
 	}
 
-	if overrides == nil {
-		overrides = &ruleOverrides{
+	effectiveOptions := inheritedOptions
+	if effectiveOptions == nil {
+		effectiveOptions = &ruleOptions{
 			whenFunc:  r.whenFunc,
 			skipEmpty: r.skipEmpty,
 			skipError: r.skipError,
@@ -120,7 +123,7 @@ func (r *Each) validateValue(ctx context.Context, value any, overrides *ruleOver
 	for i := 0; i < vs.Len(); i++ {
 		v := vs.Index(i).Interface()
 
-		if err := validateValue(ctx, v, overrides, r.rules...); err != nil {
+		if err := validateRules(ctx, v, effectiveOptions, r.rules...); err != nil {
 			var r Result
 			if errors.As(err, &r) {
 				for _, err := range r.Errors() {
