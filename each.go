@@ -12,14 +12,12 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
-	"sync"
 )
 
 type Each struct {
 	message               string
 	incorrectInputMessage string
 	rules                 Rules
-	normalizeOnce         *sync.Once
 	whenFunc              WhenFunc
 	skipEmpty             bool
 	skipError             bool
@@ -30,7 +28,6 @@ func NewEach(rules ...Rule) *Each {
 		message:               MessageInvalid,
 		incorrectInputMessage: MessageEachIncorrectInput,
 		rules:                 rules,
-		normalizeOnce:         &sync.Once{},
 	}
 }
 
@@ -93,8 +90,16 @@ func (r *Each) setSkipOnError(v bool) {
 }
 
 func (r *Each) ValidateValue(ctx context.Context, value any) error {
-	r.normalizeRules()
+	inheritedOptions := eachOptionsFromContext(ctx, r)
 
+	return r.validateValue(ctx, value, inheritedOptions)
+}
+
+func (r *Each) unwrapEach() *Each {
+	return r
+}
+
+func (r *Each) validateValue(ctx context.Context, value any, inheritedOptions *ruleOptions) error {
 	result := NewResult()
 	if value == nil || reflect.TypeOf(value).Kind() != reflect.Slice {
 		return result.WithError(
@@ -106,11 +111,19 @@ func (r *Each) ValidateValue(ctx context.Context, value any) error {
 		)
 	}
 
+	effectiveOptions := inheritedOptions
+	if effectiveOptions == nil {
+		effectiveOptions = &ruleOptions{
+			whenFunc:  r.whenFunc,
+			skipEmpty: r.skipEmpty,
+			skipError: r.skipError,
+		}
+	}
 	vs := reflect.ValueOf(value)
 	for i := 0; i < vs.Len(); i++ {
 		v := vs.Index(i).Interface()
 
-		if err := ValidateValue(ctx, v, r.rules...); err != nil {
+		if err := validateRules(ctx, v, effectiveOptions, r.rules...); err != nil {
 			var r Result
 			if errors.As(err, &r) {
 				for _, err := range r.Errors() {
@@ -134,24 +147,4 @@ func (r *Each) ValidateValue(ctx context.Context, value any) error {
 	}
 
 	return result
-}
-
-func (r *Each) normalizeRules() {
-	r.normalizeOnce.Do(func() {
-		for i, rule := range r.rules {
-			if rse, ok := rule.(RuleSkipEmpty); ok {
-				rse.setSkipOnEmpty(r.skipEmpty)
-			}
-
-			if rser, ok := rule.(RuleSkipError); ok {
-				rser.setSkipOnError(r.skipError)
-			}
-
-			if rw, ok := rule.(RuleWhen); ok {
-				rw.setWhen(r.whenFunc)
-			}
-
-			r.rules[i] = rule
-		}
-	})
 }

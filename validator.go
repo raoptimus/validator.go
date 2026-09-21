@@ -17,6 +17,10 @@ import (
 )
 
 func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
+	return validateRules(ctx, value, nil, rules...)
+}
+
+func validateRules(ctx context.Context, value any, options *ruleOptions, rules ...Rule) error {
 	if len(rules) == 0 {
 		return nil
 	}
@@ -35,11 +39,11 @@ func ValidateValue(ctx context.Context, value any, rules ...Rule) error {
 	result := NewResult()
 
 	for _, r := range rules {
-		if isSkipValidate(ctx, value, r) {
+		if isSkipValidate(ctx, value, r, options) {
 			continue
 		}
 
-		if err := r.ValidateValue(ctx, value); err != nil {
+		if err := validateRule(ctx, value, r, options); err != nil {
 			var errRes Result
 			if errors.As(err, &errRes) {
 				result = result.WithError(errRes.Errors()...)
@@ -91,7 +95,7 @@ func Validate(ctx context.Context, dataSet any, rules RuleSet) error {
 		fieldRules = normalizeRules(fieldRules)
 
 		for _, validatorRule := range fieldRules {
-			if isSkipValidate(ctx, fieldValue, validatorRule) {
+			if isSkipValidate(ctx, fieldValue, validatorRule, nil) {
 				continue
 			}
 
@@ -195,21 +199,87 @@ func normalizeRules(rules []Rule) []Rule {
 	return rules
 }
 
-func isSkipValidate(ctx context.Context, value any, r Rule) bool {
+type ruleOptions struct {
+	whenFunc  WhenFunc
+	skipEmpty bool
+	skipError bool
+}
+
+type eachUnwrapper interface {
+	unwrapEach() *Each
+}
+
+type eachOptionsContextKey struct{}
+
+type eachOptionsContextValue struct {
+	each    *Each
+	options *ruleOptions
+}
+
+func contextWithEachOptions(ctx context.Context, each *Each, options *ruleOptions) context.Context {
+	return context.WithValue(ctx, eachOptionsContextKey{}, eachOptionsContextValue{
+		each:    each,
+		options: options,
+	})
+}
+
+func eachOptionsFromContext(ctx context.Context, each *Each) *ruleOptions {
+	if ctx == nil {
+		return nil
+	}
+
+	value, ok := ctx.Value(eachOptionsContextKey{}).(eachOptionsContextValue)
+	if !ok || value.each != each {
+		return nil
+	}
+
+	return value.options
+}
+
+func validateRule(ctx context.Context, value any, r Rule, options *ruleOptions) error {
+	if each, ok := r.(*Each); ok {
+		if options == nil {
+			options = eachOptionsFromContext(ctx, each)
+		}
+
+		return each.validateValue(ctx, value, options)
+	}
+
+	if each, ok := r.(eachUnwrapper); ok && options != nil {
+		ctx = contextWithEachOptions(ctx, each.unwrapEach(), options)
+	}
+
+	return r.ValidateValue(ctx, value)
+}
+
+func isSkipValidate(ctx context.Context, value any, r Rule, options *ruleOptions) bool {
 	if rse, ok := r.(RuleSkipEmpty); ok {
-		if rse.skipOnEmpty() && valueIsEmpty(reflect.ValueOf(value)) {
+		skipEmpty := rse.skipOnEmpty()
+		if options != nil {
+			skipEmpty = options.skipEmpty
+		}
+		if skipEmpty && valueIsEmpty(reflect.ValueOf(value)) {
 			return true
 		}
 	}
 
 	if rser, ok := r.(RuleSkipError); ok {
-		if rser.shouldSkipOnError() && previousRulesErrored(ctx) {
+		skipError := rser.shouldSkipOnError()
+		if options != nil {
+			skipError = options.skipError
+		}
+		if skipError && previousRulesErrored(ctx) {
 			return true
 		}
 	}
 
 	if rw, ok := r.(RuleWhen); ok {
-		return rw.when() != nil && !rw.when()(ctx, value)
+		whenFunc := rw.when()
+		if options != nil {
+			whenFunc = options.whenFunc
+		}
+
+		return whenFunc != nil && !whenFunc(ctx, value)
 	}
 
 	return false
